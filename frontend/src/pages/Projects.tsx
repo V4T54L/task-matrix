@@ -4,14 +4,14 @@ import ProjectCard from "../components/ProjectCard"
 import { mockProjects } from "../mock/projects"
 import ProjectModal from "../components/ProjectDetailModal"
 import { useState } from "react"
-import ProjectMembersModal from "../components/forms/ProjectMembersModal"
+import ProjectMembersModal from "../components/ProjectMembersModal"
 
 const Projects = () => {
     const [IsDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false)
     const [IsMembersModalOpen, setIsMembersModalOpen] = useState<boolean>(false)
     return (
         <>
-            <div className="flex items-center mb-8">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-8">
                 <div className="flex-1">
                     <h1 className="text-4xl font-semibold text-primary my-2">Projects</h1>
                     <h2 className="text-md text-primary/80">Manage all your ongoing and completed projects.</h2>

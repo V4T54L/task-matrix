@@ -1,4 +1,4 @@
-import { Home, LayoutTemplate, Settings, User, X } from "lucide-react";
+import { Home, LayoutTemplate, Settings, User } from "lucide-react";
 import { type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 
@@ -30,13 +30,15 @@ const Sidebar = ({ children }: { children: ReactNode }) => {
 
     return (
         <div className="h-screen w-screen flex">
-            <aside className="w-64 bg-background border-r border-secondary">
+            <aside className="w-fit md:w-64 bg-background border-r border-secondary">
                 {
                     navs && (
                         navs.map(e => (
                             <NavLink to={e.to} key={e.name} className="flex mx-4 my-2 gap-2 items-center hover:bg-primary/10 px-2 py-1 rounded-md">
                                 <e.icon size={18} />
-                                {e.name}
+                                <h2 className="hidden md:block">
+                                    {e.name}
+                                </h2>
                             </NavLink>
                         ))
                     )

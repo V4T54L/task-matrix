@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Member } from '../../types';
+import type { Member } from '../types';
 
 interface MembersModalProps {
     isOpen: boolean;
@@ -79,7 +79,7 @@ const ProjectMembersModal: React.FC<MembersModalProps> = ({ isOpen, onClose, onS
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end space-x-3">
+                <div className="flex justify-between space-x-3">
                     <button
                         onClick={onClose}
                         className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300"
