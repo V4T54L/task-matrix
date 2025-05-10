@@ -5,7 +5,8 @@ import type { Project } from '../types';
 interface ProjectCardProps extends Project {
     onEdit: () => void;
     onDelete: () => void;
-    onView: () => void;
+    onViewMembers: () => void;
+    onViewBoard: () => void;
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -13,12 +14,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     description,
     due_date,
     status,
-    member_avatars,
+    members,
     tasks_completed,
     total_tasks,
     onEdit,
     onDelete,
-    onView,
+    onViewMembers,
+    onViewBoard,
 }) => {
     // Calculate the progress percentage
     const progress = (tasks_completed / total_tasks) * 100;
@@ -36,17 +38,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
             {/* Member Avatars */}
             <div className="flex -space-x-2 mb-4">
-                {member_avatars.slice(0, 4).map((avatar, index) => (
+                {members.slice(0, 4).map((member, index) => (
                     <img
                         key={index}
-                        src={avatar}
+                        src={member.avatar_url}
                         alt={`Member ${index + 1}`}
                         className="w-8 h-8 rounded-full border-2 border-white"
                     />
                 ))}
-                {member_avatars.length > 4 && (
+                {members.length > 4 && (
                     <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs text-white">
-                        +{member_avatars.length - 4}
+                        +{members.length - 4}
                     </div>
                 )}
             </div>
@@ -77,7 +79,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-between">
+            <div className="grid grid-cols-2">
                 <button
                     onClick={onEdit}
                     className="text-teal-600 hover:text-teal-800 text-sm font-semibold"
@@ -91,10 +93,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                     Delete
                 </button>
                 <button
-                    onClick={onView}
+                    onClick={onViewMembers}
+                    className="text-orange-600 hover:text-orange-800 text-sm font-semibold"
+                >
+                    View Members
+                </button>
+                <button
+                    onClick={onViewBoard}
                     className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
                 >
-                    View
+                    View Board
                 </button>
             </div>
         </div>

@@ -1,5 +1,5 @@
-import { Home, LayoutTemplate, Menu, Rocket, Settings, User, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { Home, LayoutTemplate, Settings, User, X } from "lucide-react";
+import { type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 
 const navs = [
@@ -30,13 +30,7 @@ const Sidebar = ({ children }: { children: ReactNode }) => {
 
     return (
         <div className="h-screen w-screen flex">
-            {/* Sidebar */}
             <aside className="w-64 bg-background border-r border-secondary">
-                <h2 className="flex items-center gap-4 text-xl font-semibold my-4 mx-auto w-fit">
-                    <Rocket className="text-foreground" size={24} />
-                    Task Matrix
-                </h2>
-
                 {
                     navs && (
                         navs.map(e => (

@@ -2,11 +2,13 @@ import { CirclePlus } from "lucide-react"
 import { Button } from "../components/ui/Button"
 import ProjectCard from "../components/ProjectCard"
 import { mockProjects } from "../mock/projects"
-import ProjectModal from "../components/ProjectModal"
+import ProjectModal from "../components/ProjectDetailModal"
 import { useState } from "react"
+import ProjectMembersModal from "../components/forms/ProjectMembersModal"
 
 const Projects = () => {
-    const [IsOpen, setIsOpen] = useState<boolean>(false)
+    const [IsDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false)
+    const [IsMembersModalOpen, setIsMembersModalOpen] = useState<boolean>(false)
     return (
         <>
             <div className="flex items-center mb-8">
@@ -15,7 +17,7 @@ const Projects = () => {
                     <h2 className="text-md text-primary/80">Manage all your ongoing and completed projects.</h2>
                 </div>
 
-                <Button onClick={() => setIsOpen(true)}>
+                <Button onClick={() => setIsDetailModalOpen(true)}>
                     <CirclePlus size={16} className="mr-4" />
                     Create Project
                 </Button>
@@ -27,17 +29,24 @@ const Projects = () => {
                     mockProjects &&
                     mockProjects.map(e => (
                         <ProjectCard key={e.name} {...e}
-                            onDelete={() => { }} onEdit={() => { }} onView={() => { }} />
+                            onDelete={() => { }} onEdit={() => { setIsDetailModalOpen(true) }} onViewMembers={() => { setIsMembersModalOpen(true) }} onViewBoard={() => { }} />
                     ))
                 }
             </div>
 
 
             <ProjectModal
-                isOpen={IsOpen}
-                onClose={() => setIsOpen(false)}
+                isOpen={IsDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
                 onSave={() => { }}
                 projectToEdit={undefined}
+            />
+
+            <ProjectMembersModal
+                existingMembers={mockProjects[0].members}
+                isOpen={IsMembersModalOpen}
+                onClose={() => { setIsMembersModalOpen(false) }}
+                onSave={() => { }}
             />
 
         </>

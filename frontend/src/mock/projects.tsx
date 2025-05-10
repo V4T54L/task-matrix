@@ -6,11 +6,11 @@ const getRandomProject = (id: number) => {
         name: "Project " + id,
         description: "Complete redesign of the company website for improved UX and modern aesthetics. Focus on mobile-first approach and accessibility.",
         due_date: '2025-06-30',
-        member_avatars: [
-            "https://avatar.iran.liara.run/public/3",
-            "https://avatar.iran.liara.run/public/13",
-            "https://avatar.iran.liara.run/public/23",
-            "https://avatar.iran.liara.run/public/33",
+        members: [
+            { avatar_url: "https://avatar.iran.liara.run/public/3", id: 1, name: "User One" },
+            { avatar_url: "https://avatar.iran.liara.run/public/13", id: 2, name: "User Two" },
+            { avatar_url: "https://avatar.iran.liara.run/public/23", id: 3, name: "User Three" },
+            { avatar_url: "https://avatar.iran.liara.run/public/33", id: 4, name: "User Four" },
         ],
         status: "In Progress",
         tasks_completed: 5,
