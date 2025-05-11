@@ -7,6 +7,9 @@ import Dashboard from "./pages/Dashboard"
 import Layout from "./components/Layout"
 import Projects from "./pages/Projects"
 import KanbanBoard from "./components/KanbanBoard"
+import Profile from "./pages/Profile"
+import Settings from "./pages/Settings"
+import ProjectBoard from "./pages/ProjectBoard"
 
 const App = () => {
   return (
@@ -19,7 +22,9 @@ const App = () => {
         <Route path="" element={<Layout />}>
           <Route path="" element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
-          <Route path="test" element={<KanbanBoard />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="setting" element={<Settings />} />
+          <Route path="projects/:id" element={<ProjectBoard />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

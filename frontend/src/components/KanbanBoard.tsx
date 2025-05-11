@@ -5,176 +5,106 @@ import {
     Draggable,
     type DropResult,
 } from '@hello-pangea/dnd';
+import type { Member, Status, Task, Priority } from '../types';
+import { mockTaskStatus } from '../mock/status';
+import { mockPriorities } from '../mock/priorities';
 
-// --- Types ---
-interface Item {
-    id: string;
-    content: string;
-    assigneeId: string; // e.g., 'alice', 'bob'
-    statusId: string;   // e.g., 'todo', 'inprogress', 'done'
+type TeamKanbanBoardProps = {
+    tasks: Task[],
+    members: Member[],
 }
 
-interface Member {
-    id: string;
-    name: string;
-}
+const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => {
+    const [items, setItems] = useState<Task[]>(tasks);
+    const [statuses] = useState<Status[]>(mockTaskStatus);
+    const [priorities] = useState<Priority[]>(mockPriorities);
 
-interface StatusDef {
-    id: string;
-    title: string;
-}
+    const getPriority = (id: number) => priorities.find(p => p.id === id);
 
-// --- Initial Data ---
-const initialMembers: Member[] = [
-    { id: 'alice', name: 'Alice' },
-    { id: 'bob', name: 'Bob' },
-    { id: 'charlie', name: 'Charlie (No tasks initially)' }
-];
-
-const initialStatuses: StatusDef[] = [
-    { id: 'todo', title: 'To Do' },
-    { id: 'inprogress', title: 'In Progress' },
-    { id: 'review', title: 'Review' },
-    { id: 'done', title: 'Done' },
-];
-
-const initialItems: Item[] = [
-    { id: 'item-1', content: 'Alice Task 1 (Todo)', assigneeId: 'alice', statusId: 'todo' },
-    { id: 'item-2', content: 'Alice Task 2 (Todo)', assigneeId: 'alice', statusId: 'todo' },
-    { id: 'item-3', content: 'Alice Task 3 (In Progress)', assigneeId: 'alice', statusId: 'inprogress' },
-    { id: 'item-4', content: 'Bob Task 1 (Todo)', assigneeId: 'bob', statusId: 'todo' },
-    { id: 'item-5', content: 'Bob Task 2 (Done)', assigneeId: 'bob', statusId: 'done' },
-    { id: 'item-6', content: 'Alice Task 4 (Done)', assigneeId: 'alice', statusId: 'done' },
-    { id: 'item-7', content: 'Bob Task 3 (In Progress)', assigneeId: 'bob', statusId: 'inprogress' },
-];
-
-
-// --- Styling (Simplified) ---
-const grid = 8;
-const getItemStyle = (isDragging: boolean, draggableStyle?: React.CSSProperties): React.CSSProperties => ({
-    userSelect: 'none',
-    padding: grid * 2,
-    margin: `0 0 ${grid}px 0`,
-    background: isDragging ? 'lightgreen' : 'grey',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    color: 'white',
-    ...draggableStyle
-});
-
-const getListStyle = (isDraggingOver: boolean): React.CSSProperties => ({
-    background: isDraggingOver ? 'lightblue' : 'lightgrey',
-    padding: grid,
-    width: 250,
-    minHeight: 300,
-    display: 'flex',
-    flexDirection: 'column',
-});
-
-const getColumnHeaderStyle = (): React.CSSProperties => ({
-    paddingBottom: grid,
-    fontWeight: 'bold',
-});
-
-const getMemberRowStyle = (): React.CSSProperties => ({
-    marginBottom: '20px',
-    padding: '10px',
-    border: '1px solid #eee',
-    borderRadius: '4px',
-    backgroundColor: '#f9f9f9'
-});
-
-const getBoardContainerStyle = (): React.CSSProperties => ({
-    display: 'flex',
-    gap: '16px', // Gap between columns
-});
-
-
-// --- Component ---
-const TeamKanbanBoard: React.FC = () => {
-    const [items, setItems] = useState<Item[]>(initialItems);
-    const [members] = useState<Member[]>(initialMembers);
-    const [statuses] = useState<StatusDef[]>(initialStatuses);
+    const getPriorityColor = (name: string) => {
+        switch (name.toLowerCase()) {
+            case 'high':
+                return 'bg-red-500 text-white';
+            case 'medium':
+                return 'bg-yellow-500 text-white';
+            case 'low':
+                return 'bg-green-500 text-white';
+            default:
+                return 'bg-gray-500 text-white';
+        }
+    };
 
     const onDragEnd = (result: DropResult) => {
         const { source, destination, draggableId } = result;
 
-        // Dropped outside the list
-        if (!destination) {
-            return;
-        }
+        if (!destination) return;
 
-        const itemToMove = items.find(i => i.id === draggableId);
+        const itemToMove = items.find(i => i.id.toString() === draggableId);
         if (!itemToMove) {
             console.error("Could not find item to move:", draggableId);
             return;
         }
 
-        // Extract IDs from droppableId (format: "assigneeId--statusId")
-        // const [sourceAssigneeId, sourceStatusId] = source.droppableId.split('--');
         const [destAssigneeId, destStatusId] = destination.droppableId.split('--');
 
         let newItems = Array.from(items);
 
         if (source.droppableId === destination.droppableId) {
-            // Reordering within the same cell (same assignee, same status)
             const cellItems = newItems.filter(
-                item => item.assigneeId === destAssigneeId && item.statusId === destStatusId
+                item => item.assignee_id.toString() === destAssigneeId && item.status_id.toString() === destStatusId
             );
             const [reorderedItem] = cellItems.splice(source.index, 1);
             cellItems.splice(destination.index, 0, reorderedItem);
 
-            // Get items NOT in that cell
             const otherItems = newItems.filter(
-                item => !(item.assigneeId === destAssigneeId && item.statusId === destStatusId)
+                item => !(item.assignee_id.toString() === destAssigneeId && item.status_id.toString() === destStatusId)
             );
 
-            // Reconstruct: items not in this cell, followed by items in this cell (now reordered)
             newItems = [...otherItems, ...cellItems];
 
         } else {
-            // Moving to a different cell (different assignee or status or both)
             const updatedMovedItem = {
                 ...itemToMove,
-                assigneeId: destAssigneeId,
-                statusId: destStatusId,
+                assignee_id: parseInt(destAssigneeId, 10),
+                status_id: parseInt(destStatusId, 10),
             };
 
-            // 1. Remove the item from its original position in the main list
-            newItems = newItems.filter(item => item.id !== draggableId);
+            newItems = newItems.filter(item => item.id.toString() !== draggableId);
 
-            // 2. Get items currently in the destination cell (from the list where the dragged item was removed)
             const itemsInDestCell = newItems.filter(
-                item => item.assigneeId === destAssigneeId && item.statusId === destStatusId
+                item => item.assignee_id.toString() === destAssigneeId && item.status_id.toString() === destStatusId
             );
-            // 3. Insert the *updated* item at the drop location within this sub-list of destination cell items
             itemsInDestCell.splice(destination.index, 0, updatedMovedItem);
 
-            // 4. Get items not in the destination cell (from the list where the dragged item was removed)
             const itemsNotInDestCell = newItems.filter(
-                item => !(item.assigneeId === destAssigneeId && item.statusId === destStatusId)
+                item => !(item.assignee_id.toString() === destAssigneeId && item.status_id.toString() === destStatusId)
             );
 
-            // 5. Reconstruct: items not in destination cell, followed by all items from destination cell (now including the moved one, in order)
             newItems = [...itemsNotInDestCell, ...itemsInDestCell];
         }
+
         setItems(newItems);
     };
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div style={{ padding: '20px' }}>
+            <div className="p-4">
                 {members.map(member => (
-                    <div key={member.id} style={getMemberRowStyle()}>
-                        <h3 style={{ marginTop: 0, marginBottom: '15px', borderBottom: '1px solid #ddd', paddingBottom: '5px' }}>
-                            Member: {member.name}
+                    <div key={member.id} className="mb-6">
+                        <h3 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
+                            <img
+                                src={member.avatar_url}
+                                alt={member.name}
+                                className="w-8 h-8 rounded-full"
+                            />
+                            {member.name}
                         </h3>
-                        <div style={getBoardContainerStyle()}>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                             {statuses.map(status => {
                                 const droppableId = `${member.id}--${status.id}`;
-                                // Filter items for the current member and status
                                 const currentCellItems = items.filter(
-                                    item => item.assigneeId === member.id && item.statusId === status.id
+                                    item => item.assignee_id === member.id && item.status_id === status.id
                                 );
 
                                 return (
@@ -183,33 +113,56 @@ const TeamKanbanBoard: React.FC = () => {
                                             <div
                                                 ref={provided.innerRef}
                                                 {...provided.droppableProps}
-                                                style={getListStyle(snapshot.isDraggingOver)}
+                                                className={`bg-white rounded-lg shadow-md p-3 ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50'
+                                                    }`}
                                             >
-                                                <h4 style={getColumnHeaderStyle()}>{status.title} ({currentCellItems.length})</h4>
-                                                <div style={{ flexGrow: 1, overflowY: 'auto' /* For scroll if many items */ }}>
+                                                <h4 className="text-lg font-semibold text-gray-700">
+                                                    {status.name} ({currentCellItems.length})
+                                                </h4>
+                                                <div className="space-y-2 mt-2">
                                                     {currentCellItems.map((item, index) => (
-                                                        <Draggable key={item.id} draggableId={item.id} index={index}>
+                                                        <Draggable
+                                                            key={item.id}
+                                                            draggableId={item.id.toString()}
+                                                            index={index}
+                                                        >
                                                             {(providedDraggable, snapshotDraggable) => (
                                                                 <div
                                                                     ref={providedDraggable.innerRef}
                                                                     {...providedDraggable.draggableProps}
                                                                     {...providedDraggable.dragHandleProps}
-                                                                    style={getItemStyle(
-                                                                        snapshotDraggable.isDragging,
-                                                                        providedDraggable.draggableProps.style
-                                                                    )}
+                                                                    className={`bg-white border border-gray-200 rounded-lg p-3 shadow-sm transition-all ${snapshotDraggable.isDragging
+                                                                        ? 'bg-blue-100'
+                                                                        : 'hover:bg-blue-50'
+                                                                        }`}
                                                                 >
-                                                                    {item.content}
-                                                                    <div style={{ fontSize: '0.8em', opacity: 0.7, marginTop: '4px' }}>
-                                                                        ID: {item.id}
+                                                                    <div className="flex justify-between items-center">
+                                                                        <div className="text-sm font-medium text-gray-800">
+                                                                            {item.title}
+                                                                        </div>
+                                                                        {(() => {
+                                                                            const priority = getPriority(item.priority_id);
+                                                                            return priority ? (
+                                                                                <span
+                                                                                    className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(
+                                                                                        priority.name
+                                                                                    )}`}
+                                                                                >
+                                                                                    {priority.name}
+                                                                                </span>
+                                                                            ) : null;
+                                                                        })()}
                                                                     </div>
+                                                                    <p className="text-xs text-gray-600 mt-1">
+                                                                        {item.description}
+                                                                    </p>
                                                                 </div>
                                                             )}
                                                         </Draggable>
                                                     ))}
                                                     {provided.placeholder}
                                                     {currentCellItems.length === 0 && !snapshot.isDraggingOver && (
-                                                        <div style={{ textAlign: 'center', color: '#777', marginTop: '20px', fontStyle: 'italic' }}>
+                                                        <div className="text-center text-sm text-gray-400 italic mt-4">
                                                             No tasks here.
                                                         </div>
                                                     )}

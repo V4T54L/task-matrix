@@ -5,10 +5,16 @@ import { mockProjects } from "../mock/projects"
 import ProjectModal from "../components/ProjectDetailModal"
 import { useState } from "react"
 import ProjectMembersModal from "../components/ProjectMembersModal"
+import { useNavigate } from "react-router-dom"
 
 const Projects = () => {
     const [IsDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false)
     const [IsMembersModalOpen, setIsMembersModalOpen] = useState<boolean>(false)
+    const navigate = useNavigate()
+    const viewBoard = (id: number) => {
+        navigate(`${id}`)
+    }
+
     return (
         <>
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-8">
@@ -29,7 +35,7 @@ const Projects = () => {
                     mockProjects &&
                     mockProjects.map(e => (
                         <ProjectCard key={e.name} {...e}
-                            onDelete={() => { }} onEdit={() => { setIsDetailModalOpen(true) }} onViewMembers={() => { setIsMembersModalOpen(true) }} onViewBoard={() => { }} />
+                            onDelete={() => { }} onEdit={() => { setIsDetailModalOpen(true) }} onViewMembers={() => { setIsMembersModalOpen(true) }} onViewBoard={() => viewBoard(e.id)} />
                     ))
                 }
             </div>

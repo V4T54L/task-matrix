@@ -19,3 +19,17 @@ export type Member = {
     name: string,
     avatar_url: string,
 }
+
+export type Task = {
+    id: number,
+    title: string,
+    description: string,
+    priority_id: number,
+    status_id: number,
+    assignee_id: number,
+}
+
+export type Priority = {
+    id: number,
+    name: string,
+}

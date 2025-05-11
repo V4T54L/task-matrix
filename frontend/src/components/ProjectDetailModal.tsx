@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Project } from '../types';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { mockStatus } from '../mock/status';
+import { mockProjectStatus } from '../mock/status';
 
 interface ModalProps {
     isOpen: boolean;
@@ -27,7 +27,7 @@ const ProjectDetailModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, pro
         const newProject: Project = {
             id: projectToEdit?.id ?? 1,
             ...data,
-            status: mockStatus.find(e => e.id == data.status_id)?.name + "",
+            status: mockProjectStatus.find(e => e.id == data.status_id)?.name + "",
             members: [],
             tasks_completed: 0,
             total_tasks: 0,
@@ -98,7 +98,7 @@ const ProjectDetailModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, pro
 
                                     <option value="">Select a status</option>
 
-                                    {mockStatus.map(status => (
+                                    {mockProjectStatus.map(status => (
 
                                         <option key={status.id} value={status.id}>
 
