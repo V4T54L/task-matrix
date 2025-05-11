@@ -10,7 +10,8 @@ import { mockTaskStatus } from '../mock/status';
 import { mockPriorities } from '../mock/priorities';
 import { Button } from './ui/Button';
 import TaskDetailModal from './TaskDetailModal';
-import { Eye, Pen } from 'lucide-react';
+import { Eye, Pen, Trash } from 'lucide-react';
+import ViewTaskModal from './ViewTaskModal';
 
 type TeamKanbanBoardProps = {
     tasks: Task[],
@@ -23,6 +24,20 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
     const [priorities] = useState<Priority[]>(mockPriorities);
     const [IsTaskModalOpen, setIsTaskModalOpen] = useState(false)
     const currentTask = useRef<Task | undefined>(undefined)
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [isViewModalOpen, setViewModalOpen] = useState(false);
+
+    const handleViewTask = (task: Task) => {
+        setSelectedTask(task);
+        setViewModalOpen(true);
+    };
+
+    const handleEditTask = (task: Task) => {
+        setSelectedTask(task);
+        setIsTaskModalOpen(true);
+    };
+
+
 
     const getPriority = (id: number) => priorities.find(p => p.id === id);
 
@@ -37,6 +52,10 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
             default:
                 return 'bg-gray-500 text-white';
         }
+    };
+
+    const handleDeleteTask = (taskId: number) => {
+        setItems(prev => prev.filter(task => task.id !== taskId));
     };
 
     const onDragEnd = (result: DropResult) => {
@@ -156,23 +175,41 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
                                                                             : 'hover:bg-blue-50'
                                                                             }`}
                                                                     >
-                                                                        <div className="flex justify-between items-center">
-                                                                            <div className="text-sm font-medium text-gray-800">
-                                                                                {item.title}
+                                                                        <div className="flex justify-between items-start gap-2">
+                                                                            <div className="flex-1">
+                                                                                <div className="text-sm font-medium text-gray-800">{item.title}</div>
+                                                                                <p className="text-xs text-gray-600 mt-1">{item.description}</p>
                                                                             </div>
-                                                                            {(() => {
-                                                                                const priority = getPriority(item.priority_id);
-                                                                                return priority ? (
-                                                                                    <span
-                                                                                        className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(
-                                                                                            priority.name
-                                                                                        )}`}
+                                                                            <div className="flex flex-col items-end gap-1">
+                                                                                <div className="flex gap-1">
+                                                                                    <button
+                                                                                        onClick={() => handleEditTask(item)}
+                                                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                                                        title="Edit"
                                                                                     >
-                                                                                        {priority.name}
-                                                                                    </span>
-                                                                                ) : null;
-                                                                            })()}
+                                                                                        <Pen className="w-4 h-4 text-gray-600" />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => handleViewTask(item)}
+                                                                                        className="p-1 hover:bg-gray-200 rounded"
+                                                                                        title="View"
+                                                                                    >
+                                                                                        <Eye className="w-4 h-4 text-gray-600" />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => handleDeleteTask(item.id)}
+                                                                                        className="p-1 hover:bg-red-100 rounded"
+                                                                                        title="Delete"
+                                                                                    >
+                                                                                        <Trash className="w-4 h-4 text-red-600" />
+                                                                                    </button>
+                                                                                </div>
+                                                                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getPriorityColor(getPriority(item.priority_id)?.name || '')}`}>
+                                                                                    {getPriority(item.priority_id)?.name}
+                                                                                </span>
+                                                                            </div>
                                                                         </div>
+
                                                                         <p className="text-xs text-gray-600 mt-1">
                                                                             {item.description}
                                                                         </p>
@@ -198,7 +235,13 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
                 </div>
             </DragDropContext>
 
-            <TaskDetailModal isOpen={IsTaskModalOpen} onClose={closeEditModal} onSave={() => { }} taskToEdit={undefined} />
+            <TaskDetailModal isOpen={IsTaskModalOpen} onClose={closeEditModal} onSave={() => { }} taskToEdit={selectedTask ? selectedTask : undefined} />
+            <ViewTaskModal
+                task={selectedTask}
+                isOpen={isViewModalOpen}
+                onClose={() => setViewModalOpen(false)}
+            />
+
         </>
     );
 };

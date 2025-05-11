@@ -6,10 +6,10 @@ import NotFoundPage from "./pages/NotFoundPage"
 import Dashboard from "./pages/Dashboard"
 import Layout from "./components/Layout"
 import Projects from "./pages/Projects"
-import KanbanBoard from "./components/KanbanBoard"
 import Profile from "./pages/Profile"
 import Settings from "./pages/Settings"
 import ProjectBoard from "./pages/ProjectBoard"
+import ProtectedRoute from "./components/ProtectedRoute"
 
 const App = () => {
   return (
@@ -19,7 +19,11 @@ const App = () => {
           <Route path="signup" element={<Signup />} />
           <Route path="login" element={<Login />} />
         </Route>
-        <Route path="" element={<Layout />}>
+        <Route path="" element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }>
           <Route path="" element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
           <Route path="profile" element={<Profile />} />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { Project } from '../types';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { mockProjectStatus } from '../mock/status';
@@ -18,7 +18,7 @@ type FormFields = {
 }
 
 const ProjectDetailModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, projectToEdit }) => {
-    const { register, handleSubmit, formState: { isSubmitting } } = useForm<FormFields>({
+    const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<FormFields>({
         defaultValues: { ...projectToEdit }
     });
 
@@ -36,6 +36,12 @@ const ProjectDetailModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, pro
         onClose();  // Close the modal after saving
         console.log("New project created: ", newProject);
     };
+
+    useEffect(() => {
+        if (projectToEdit) {
+            reset(projectToEdit)
+        }
+    }, [projectToEdit, reset])
 
     return (
         <>

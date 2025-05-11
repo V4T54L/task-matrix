@@ -1,7 +1,9 @@
 import { KeyRound, LogIn, User } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Button } from "../ui/Button";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import type { User as UserDetail } from "../../types";
+import { useAuth } from "../../context/authProvider";
 
 type FormFields = {
     username: string;
@@ -10,11 +12,15 @@ type FormFields = {
 
 const Login = () => {
     const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<FormFields>();
+    const { login } = useAuth();
+    const navigate = useNavigate();
 
     const onSubmit: SubmitHandler<FormFields> = async (data) => {
         try {
             await new Promise((resolve) => setTimeout(resolve, 1000))
-            throw new Error();
+            const newUser: UserDetail = { id: 20, name: "Test User" }
+            login(newUser, "token")
+            navigate("/")
         } catch (error) {
             setError("root", {
                 message: "Invalid credentials",

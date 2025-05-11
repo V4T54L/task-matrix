@@ -1,9 +1,12 @@
-import { Outlet } from "react-router-dom"
+import { Outlet, useNavigate } from "react-router-dom"
 import Sidebar from "./Sidebar"
 import { DoorOpen, Rocket } from "lucide-react"
 import { Button } from "./ui/Button"
+import { useAuth } from "../context/authProvider"
 
 const Layout = () => {
+  const { logout } = useAuth();
+
   return (
     <>
       <div className=" bg-background">
@@ -16,7 +19,7 @@ const Layout = () => {
           </h2>
 
           {/* logout */}
-          <Button variant="outline" className="text-red-700 border-red-700 shadow-md  ">
+          <Button variant="outline" className="text-red-700 border-red-700 shadow-md  " onClick={logout}>
             <DoorOpen />
           </Button>
         </header >

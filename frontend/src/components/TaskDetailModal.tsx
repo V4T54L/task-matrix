@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import type { Task, Priority, Status, Member } from '../types';
 import { mockPriorities } from '../mock/priorities';
@@ -24,6 +24,7 @@ const TaskDetailModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, ta
     const {
         register,
         handleSubmit,
+        reset,
         formState: { isSubmitting },
     } = useForm<TaskFormFields>({
         defaultValues: { ...taskToEdit },
@@ -37,6 +38,18 @@ const TaskDetailModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, ta
         onSave(newTask);
         onClose();
     };
+
+    useEffect(() => {
+        if (taskToEdit) {
+            reset({
+                title: taskToEdit.title,
+                description: taskToEdit.description,
+                priority_id: taskToEdit.priority_id,
+                status_id: taskToEdit.status_id,
+                assignee_id: taskToEdit.assignee_id,
+            });
+        }
+    }, [taskToEdit, reset]);
 
     return (
         <>

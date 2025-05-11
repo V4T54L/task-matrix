@@ -1,6 +1,6 @@
 import { ArrowLeftCircle } from "lucide-react"
 import { Button } from "../components/ui/Button"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { mockProjects } from "../mock/projects";
 import type { Project } from "../types";
 import TeamKanbanBoard from "../components/KanbanBoard";
@@ -9,6 +9,7 @@ import { mockTasks } from "../mock/tasks";
 const ProjectBoard = () => {
     const { id } = useParams();
     const currentProject: Project | undefined = mockProjects.find(e => id && e.id == parseInt(id))
+    const navigate = useNavigate()
 
     if (!currentProject) {
         return <>
@@ -18,7 +19,9 @@ const ProjectBoard = () => {
 
     return (
         <>
-            <Button variant="ghost" className="font-normal flex gap-2">
+            <Button variant="ghost" className="font-normal flex gap-2"
+                onClick={() => navigate("/projects")}
+            >
                 <ArrowLeftCircle />
                 <h3>
                     Back to projects
