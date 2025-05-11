@@ -3,16 +3,29 @@ import { Button } from "../components/ui/Button"
 import ProjectCard from "../components/ProjectCard"
 import { mockProjects } from "../mock/projects"
 import ProjectModal from "../components/ProjectDetailModal"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import ProjectMembersModal from "../components/ProjectMembersModal"
 import { useNavigate } from "react-router-dom"
+import type { Project } from "../types"
 
 const Projects = () => {
     const [IsDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false)
     const [IsMembersModalOpen, setIsMembersModalOpen] = useState<boolean>(false)
+    const currentProject = useRef<Project | undefined>(undefined)
     const navigate = useNavigate()
     const viewBoard = (id: number) => {
         navigate(`${id}`)
+    }
+
+    const openEditModal = (projectId: number) => {
+        const project = mockProjects.find(e => e.id == projectId)
+        currentProject.current = project
+        setIsDetailModalOpen(true)
+    }
+
+    const closeEditModal = () => {
+        currentProject.current = undefined
+        setIsDetailModalOpen(false)
     }
 
     return (
@@ -23,7 +36,7 @@ const Projects = () => {
                     <h2 className="text-md text-primary/80">Manage all your ongoing and completed projects.</h2>
                 </div>
 
-                <Button onClick={() => setIsDetailModalOpen(true)}>
+                <Button onClick={() => openEditModal(-1)}>
                     <CirclePlus size={16} className="mr-4" />
                     Create Project
                 </Button>
@@ -35,7 +48,7 @@ const Projects = () => {
                     mockProjects &&
                     mockProjects.map(e => (
                         <ProjectCard key={e.name} {...e}
-                            onDelete={() => { }} onEdit={() => { setIsDetailModalOpen(true) }} onViewMembers={() => { setIsMembersModalOpen(true) }} onViewBoard={() => viewBoard(e.id)} />
+                            onDelete={() => { }} onEdit={() => { openEditModal(e.id) }} onViewMembers={() => { setIsMembersModalOpen(true) }} onViewBoard={() => viewBoard(e.id)} />
                     ))
                 }
             </div>
@@ -43,9 +56,9 @@ const Projects = () => {
 
             <ProjectModal
                 isOpen={IsDetailModalOpen}
-                onClose={() => setIsDetailModalOpen(false)}
+                onClose={() => closeEditModal()}
                 onSave={() => { }}
-                projectToEdit={undefined}
+                projectToEdit={currentProject.current}
             />
 
             <ProjectMembersModal

@@ -43,7 +43,7 @@ const ProjectDetailModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, pro
                 <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
                         <h2 className="text-2xl font-semibold mb-4">
-                            {projectToEdit ? 'Edit Project' : 'Create New Project'}
+                            {projectToEdit ? 'Edit Project: ' + projectToEdit.name : 'Create New Project'}
                         </h2>
 
                         <div className="space-y-4">

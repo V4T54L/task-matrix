@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     DragDropContext,
     Droppable,
@@ -8,6 +8,9 @@ import {
 import type { Member, Status, Task, Priority } from '../types';
 import { mockTaskStatus } from '../mock/status';
 import { mockPriorities } from '../mock/priorities';
+import { Button } from './ui/Button';
+import TaskDetailModal from './TaskDetailModal';
+import { Eye, Pen } from 'lucide-react';
 
 type TeamKanbanBoardProps = {
     tasks: Task[],
@@ -18,6 +21,8 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
     const [items, setItems] = useState<Task[]>(tasks);
     const [statuses] = useState<Status[]>(mockTaskStatus);
     const [priorities] = useState<Priority[]>(mockPriorities);
+    const [IsTaskModalOpen, setIsTaskModalOpen] = useState(false)
+    const currentTask = useRef<Task | undefined>(undefined)
 
     const getPriority = (id: number) => priorities.find(p => p.id === id);
 
@@ -86,97 +91,115 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
         setItems(newItems);
     };
 
+
+    const openEditModal = (projectId: number) => {
+        const task = items.find(e => e.id == projectId)
+        currentTask.current = task
+        setIsTaskModalOpen(true)
+    }
+
+    const closeEditModal = () => {
+        currentTask.current = undefined
+        setIsTaskModalOpen(false)
+    }
+
+
     return (
-        <DragDropContext onDragEnd={onDragEnd}>
-            <div className="p-4">
-                {members.map(member => (
-                    <div key={member.id} className="mb-6">
-                        <h3 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
-                            <img
-                                src={member.avatar_url}
-                                alt={member.name}
-                                className="w-8 h-8 rounded-full"
-                            />
-                            {member.name}
-                        </h3>
+        <>
+            <Button size='sm' variant='outline' onClick={() => openEditModal(-1)}>Create Task</Button>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="p-4">
+                    {members.map(member => (
+                        <div key={member.id} className="mb-6">
+                            <h3 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
+                                <img
+                                    src={member.avatar_url}
+                                    alt={member.name}
+                                    className="w-8 h-8 rounded-full"
+                                />
+                                {member.name}
+                            </h3>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                            {statuses.map(status => {
-                                const droppableId = `${member.id}--${status.id}`;
-                                const currentCellItems = items.filter(
-                                    item => item.assignee_id === member.id && item.status_id === status.id
-                                );
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                                {statuses.map(status => {
+                                    const droppableId = `${member.id}--${status.id}`;
+                                    const currentCellItems = items.filter(
+                                        item => item.assignee_id === member.id && item.status_id === status.id
+                                    );
 
-                                return (
-                                    <Droppable key={droppableId} droppableId={droppableId}>
-                                        {(provided, snapshot) => (
-                                            <div
-                                                ref={provided.innerRef}
-                                                {...provided.droppableProps}
-                                                className={`bg-white rounded-lg shadow-md p-3 ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50'
-                                                    }`}
-                                            >
-                                                <h4 className="text-lg font-semibold text-gray-700">
-                                                    {status.name} ({currentCellItems.length})
-                                                </h4>
-                                                <div className="space-y-2 mt-2">
-                                                    {currentCellItems.map((item, index) => (
-                                                        <Draggable
-                                                            key={item.id}
-                                                            draggableId={item.id.toString()}
-                                                            index={index}
-                                                        >
-                                                            {(providedDraggable, snapshotDraggable) => (
-                                                                <div
-                                                                    ref={providedDraggable.innerRef}
-                                                                    {...providedDraggable.draggableProps}
-                                                                    {...providedDraggable.dragHandleProps}
-                                                                    className={`bg-white border border-gray-200 rounded-lg p-3 shadow-sm transition-all ${snapshotDraggable.isDragging
-                                                                        ? 'bg-blue-100'
-                                                                        : 'hover:bg-blue-50'
-                                                                        }`}
-                                                                >
-                                                                    <div className="flex justify-between items-center">
-                                                                        <div className="text-sm font-medium text-gray-800">
-                                                                            {item.title}
+                                    return (
+                                        <Droppable key={droppableId} droppableId={droppableId}>
+                                            {(provided, snapshot) => (
+                                                <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.droppableProps}
+                                                    className={`bg-white rounded-lg shadow-md p-3 ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50'
+                                                        }`}
+                                                >
+                                                    <h4 className="text-lg font-semibold text-gray-700">
+                                                        {status.name} ({currentCellItems.length})
+                                                    </h4>
+                                                    <div className="space-y-2 mt-2">
+                                                        {currentCellItems.map((item, index) => (
+                                                            <Draggable
+                                                                key={item.id}
+                                                                draggableId={item.id.toString()}
+                                                                index={index}
+                                                            >
+                                                                {(providedDraggable, snapshotDraggable) => (
+                                                                    <div
+                                                                        ref={providedDraggable.innerRef}
+                                                                        {...providedDraggable.draggableProps}
+                                                                        {...providedDraggable.dragHandleProps}
+                                                                        className={`bg-white border border-gray-200 rounded-lg p-3 shadow-sm transition-all ${snapshotDraggable.isDragging
+                                                                            ? 'bg-blue-100'
+                                                                            : 'hover:bg-blue-50'
+                                                                            }`}
+                                                                    >
+                                                                        <div className="flex justify-between items-center">
+                                                                            <div className="text-sm font-medium text-gray-800">
+                                                                                {item.title}
+                                                                            </div>
+                                                                            {(() => {
+                                                                                const priority = getPriority(item.priority_id);
+                                                                                return priority ? (
+                                                                                    <span
+                                                                                        className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(
+                                                                                            priority.name
+                                                                                        )}`}
+                                                                                    >
+                                                                                        {priority.name}
+                                                                                    </span>
+                                                                                ) : null;
+                                                                            })()}
                                                                         </div>
-                                                                        {(() => {
-                                                                            const priority = getPriority(item.priority_id);
-                                                                            return priority ? (
-                                                                                <span
-                                                                                    className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(
-                                                                                        priority.name
-                                                                                    )}`}
-                                                                                >
-                                                                                    {priority.name}
-                                                                                </span>
-                                                                            ) : null;
-                                                                        })()}
+                                                                        <p className="text-xs text-gray-600 mt-1">
+                                                                            {item.description}
+                                                                        </p>
                                                                     </div>
-                                                                    <p className="text-xs text-gray-600 mt-1">
-                                                                        {item.description}
-                                                                    </p>
-                                                                </div>
-                                                            )}
-                                                        </Draggable>
-                                                    ))}
-                                                    {provided.placeholder}
-                                                    {currentCellItems.length === 0 && !snapshot.isDraggingOver && (
-                                                        <div className="text-center text-sm text-gray-400 italic mt-4">
-                                                            No tasks here.
-                                                        </div>
-                                                    )}
+                                                                )}
+                                                            </Draggable>
+                                                        ))}
+                                                        {provided.placeholder}
+                                                        {currentCellItems.length === 0 && !snapshot.isDraggingOver && (
+                                                            <div className="text-center text-sm text-gray-400 italic mt-4">
+                                                                No tasks here.
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                    </Droppable>
-                                );
-                            })}
+                                            )}
+                                        </Droppable>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
-        </DragDropContext>
+                    ))}
+                </div>
+            </DragDropContext>
+
+            <TaskDetailModal isOpen={IsTaskModalOpen} onClose={closeEditModal} onSave={() => { }} taskToEdit={undefined} />
+        </>
     );
 };
 
