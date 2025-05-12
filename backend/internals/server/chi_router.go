@@ -28,4 +28,8 @@ func RegisterRoutes(r *chi.Mux) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("healthy"))
 	})
+
+	r.Get("", func(w http.ResponseWriter, r *http.Request) {
+		// r.Use(middlewares.AuthMiddleware())
+	})
 }
