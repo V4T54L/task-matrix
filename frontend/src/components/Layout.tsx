@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from "react-router-dom"
+import { Outlet } from "react-router-dom"
 import Sidebar from "./Sidebar"
 import { DoorOpen, Rocket } from "lucide-react"
 import { Button } from "./ui/Button"

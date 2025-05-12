@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import type { Task, Priority, Status, Member } from '../types';
+import type { Task } from '../types';
 import { mockPriorities } from '../mock/priorities';
 import { mockTaskStatus } from '../mock/status';
 import { mockProjects } from '../mock/projects';
