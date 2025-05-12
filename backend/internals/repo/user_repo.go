@@ -15,12 +15,12 @@ func NewUserRepo(db *sql.DB) UserRepo {
 	return &userRepoImpl{db: db}
 }
 
-func (r *userRepoImpl) CreateUser(ctx context.Context, name, username, email, hashedPassword string) (int, error) {
+func (r *userRepoImpl) CreateUser(ctx context.Context, name, username, email, avatarUrl, hashedPassword string) (int, error) {
 	query := `
-		INSERT INTO users (name, username, email, password)
-		VALUES (?, ?, ?, ?)
+		INSERT INTO users (name, username, email, avatar_url, password)
+		VALUES (?, ?, ?, ?, ?)
 	`
-	result, err := r.db.ExecContext(ctx, query, name, username, email, hashedPassword)
+	result, err := r.db.ExecContext(ctx, query, name, username, email, avatarUrl, hashedPassword)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create user: %w", err)
 	}

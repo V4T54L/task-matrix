@@ -6,7 +6,7 @@ import (
 )
 
 type UserRepo interface {
-	CreateUser(ctx context.Context, name, username, email, hashedPassword string) (id int, err error)
+	CreateUser(ctx context.Context, name, username, email, avatarUrl, hashedPassword string) (id int, err error)
 	GetUserByCreds(ctx context.Context, username, hashedPassword string) (user *models.User, err error)
 }
 
