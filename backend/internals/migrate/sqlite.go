@@ -15,6 +15,7 @@ func MigrateSQLite(ctx context.Context, db *sql.DB) error {
 			name TEXT NOT NULL,
 			username TEXT NOT NULL UNIQUE,
 			email TEXT NOT NULL UNIQUE,
+			avatar_url TEXT NOT NULL,
 			password TEXT NOT NULL
 		);
 
@@ -28,7 +29,7 @@ func MigrateSQLite(ctx context.Context, db *sql.DB) error {
 			owner_id INTEGER NOT NULL,
 			title TEXT NOT NULL,
 			description TEXT,
-			status_id INTEGER,
+			status_id INTEGER DEFAULT 1,
 			due_date DATE,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			deleted_at DATETIME,
@@ -61,6 +62,40 @@ func MigrateSQLite(ctx context.Context, db *sql.DB) error {
 			FOREIGN KEY (assignee_id) REFERENCES users(id),
 			FOREIGN KEY (project_id) REFERENCES projects(id)
 		);
+			
+		-- Populate DB
+		
+		INSERT INTO statuses (name)
+		SELECT 'TODO'
+		WHERE NOT EXISTS (SELECT 1 FROM statuses WHERE name = 'TODO');
+
+		INSERT INTO statuses (name)
+		SELECT 'In Progress'
+		WHERE NOT EXISTS (SELECT 1 FROM statuses WHERE name = 'In Progress');
+
+		INSERT INTO statuses (name)
+		SELECT 'Review'
+		WHERE NOT EXISTS (SELECT 1 FROM statuses WHERE name = 'Review');
+
+		INSERT INTO statuses (name)
+		SELECT 'Completed'
+		WHERE NOT EXISTS (SELECT 1 FROM statuses WHERE name = 'Completed');
+
+		INSERT INTO priorities (name)
+		SELECT 'Low'
+		WHERE NOT EXISTS (SELECT 1 FROM priorities WHERE name = 'Low');
+
+		INSERT INTO priorities (name)
+		SELECT 'Medium'
+		WHERE NOT EXISTS (SELECT 1 FROM priorities WHERE name = 'Medium');
+
+		INSERT INTO priorities (name)
+		SELECT 'High'
+		WHERE NOT EXISTS (SELECT 1 FROM priorities WHERE name = 'High');
+
+		INSERT INTO priorities (name)
+		SELECT 'Critical'
+		WHERE NOT EXISTS (SELECT 1 FROM priorities WHERE name = 'Critical');
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
