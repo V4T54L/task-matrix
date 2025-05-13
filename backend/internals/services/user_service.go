@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"task-matrix-be/internals/middlewares"
 	"task-matrix-be/internals/models"
@@ -17,68 +18,78 @@ type userServiceImpl struct {
 func (s *userServiceImpl) Login(w http.ResponseWriter, r *http.Request) {
 	var payload models.LoginPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Printf("[ERROR] [Login] Failed to decode payload: %v", err)
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	if payload.Username == "" || payload.Password == "" {
+		log.Printf("[WARN] [Login] Missing username or password")
 		http.Error(w, "Username and password are required", http.StatusBadRequest)
 		return
 	}
 
 	hashed, err := utils.Hash(payload.Password)
 	if err != nil {
-		http.Error(w, "Failed hashing the password", http.StatusInternalServerError)
+		log.Printf("[ERROR] [Login] Failed to hash password for user %s: %v", payload.Username, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	user, err := s.repo.GetUserByCreds(r.Context(), payload.Username, hashed)
 	if err != nil {
+		log.Printf("[WARN] [Login] Invalid credentials for user %s", payload.Username)
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
 
 	token, err := s.tokenGenerator(*user)
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		log.Printf("[ERROR] [Login] Token generation failed for user ID %d: %v", user.ID, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	response := map[string]any{
+	log.Printf("[INFO] [Login] User %s (ID %d) logged in successfully", user.Username, user.ID)
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]any{
 		"token": token,
 		"user":  user,
-	}
-
-	json.NewEncoder(w).Encode(response)
-	w.WriteHeader(http.StatusOK)
+	})
 }
 
 func (s *userServiceImpl) Signup(w http.ResponseWriter, r *http.Request) {
 	var payload models.SignupPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Printf("[ERROR] [Signup] Failed to decode payload: %v", err)
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	if payload.Password != payload.ConfirmPassword {
-		http.Error(w, "Password and confirm password does not match", http.StatusBadRequest)
+		log.Printf("[WARN] [Signup] Passwords do not match for user: %s", payload.Username)
+		http.Error(w, "Passwords do not match", http.StatusBadRequest)
 		return
 	}
 
 	if payload.Username == "" || payload.Password == "" || payload.Email == "" {
-		http.Error(w, "Username and password are required", http.StatusBadRequest)
+		log.Printf("[WARN] [Signup] Missing required fields: username/email/password")
+		http.Error(w, "Required fields missing", http.StatusBadRequest)
 		return
 	}
 
 	hashed, err := utils.Hash(payload.Password)
 	if err != nil {
-		http.Error(w, "Failed hashing the password", http.StatusInternalServerError)
+		log.Printf("[ERROR] [Signup] Failed to hash password for user %s: %v", payload.Username, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	id, err := s.repo.CreateUser(r.Context(), payload.Name, payload.Username, payload.Email, payload.AvatarUrl, hashed)
 	if err != nil {
-		http.Error(w, "Username or email is taken", http.StatusUnauthorized)
+		log.Printf("[WARN] [Signup] Username/email already in use: %s / %s", payload.Username, payload.Email)
+		http.Error(w, "Username or email is already taken", http.StatusConflict)
 		return
 	}
 
@@ -89,26 +100,30 @@ func (s *userServiceImpl) Signup(w http.ResponseWriter, r *http.Request) {
 
 	token, err := s.tokenGenerator(user)
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		log.Printf("[ERROR] [Signup] Token generation failed for user ID %d: %v", user.ID, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	response := map[string]any{
+	log.Printf("[INFO] [Signup] User created successfully: %s (ID %d)", user.Username, user.ID)
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]any{
 		"token": token,
 		"user":  user,
-	}
-
-	json.NewEncoder(w).Encode(response)
-	w.WriteHeader(http.StatusCreated)
+	})
 }
 
 func (s *userServiceImpl) GetLoggedInUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value(middlewares.UserContextKey).(models.User)
 	if !ok {
-		http.Error(w, "middleware not mounted", http.StatusInternalServerError)
+		log.Printf("[ERROR] [GetLoggedInUser] Middleware context missing")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(user)
+	log.Printf("[INFO] [GetLoggedInUser] Returning user: %s (ID %d)", user.Username, user.ID)
+
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }

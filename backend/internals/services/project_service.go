@@ -133,7 +133,7 @@ func (s projectServiceImpl) UpdateProject(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	project, err := s.repo.UpdateProjectByID(r.Context(), currentUser.ID, id, currentUser.Name, payload.Description, payload.DueDate, payload.StatusID)
+	project, err := s.repo.UpdateProjectByID(r.Context(), currentUser.ID, id, payload.Name, payload.Description, payload.DueDate, payload.StatusID)
 	if err != nil {
 		http.Error(w, "Failed to update the project", http.StatusInternalServerError)
 		return

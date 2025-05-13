@@ -36,9 +36,6 @@ func (r *userRepoImpl) GetUserByCreds(ctx context.Context, username, hashedPassw
 	row := r.db.QueryRowContext(ctx, query, username, hashedPassword)
 	var user models.User
 	if err := row.Scan(&user.ID, &user.Name, &user.Username, &user.Email, &user.AvatarUrl); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
 		return nil, fmt.Errorf("failed to get user by credentials: %w", err)
 	}
 	return &user, nil

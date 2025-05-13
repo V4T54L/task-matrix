@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
+	"strings"
 	"task-matrix-be/internals/models"
 )
 
@@ -27,6 +29,7 @@ func (r *projectRepoImpl) CreateProject(ctx context.Context, currentUserID int, 
 
 // GetProjects returns all projects the user owns or is a member of
 func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([]models.Project, error) {
+	// Step 1: Get core project data
 	query := `
 		SELECT
 			p.id, p.title, p.description, p.due_date,
@@ -41,6 +44,7 @@ func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([
 		WHERE p.deleted_at IS NULL AND (p.owner_id = ? OR pm.user_id = ?)
 		GROUP BY p.id
 	`
+
 	rows, err := r.db.QueryContext(ctx, query, currentUserID, currentUserID)
 	if err != nil {
 		return nil, err
@@ -48,6 +52,7 @@ func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([
 	defer rows.Close()
 
 	var projects []models.Project
+	projectMap := make(map[int]*models.Project)
 	for rows.Next() {
 		var p models.Project
 		err := rows.Scan(
@@ -59,9 +64,67 @@ func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([
 		if err != nil {
 			return nil, err
 		}
+		p.Members = make([]models.User, 0, 1)
+		projectMap[p.ID] = &p
 		projects = append(projects, p)
 	}
+
+	// Step 2: Fetch members for all projects in one query
+	if len(projects) == 0 {
+		return projects, nil // no projects found
+	}
+
+	projectIDs := make([]any, 0, len(projects))
+	for _, p := range projects {
+		projectIDs = append(projectIDs, p.ID)
+	}
+
+	log.Println("Project IDs : ", projectIDs)
+
+	memberQuery := `
+		SELECT
+			pm.project_id,
+			u.id, u.name, u.username, u.email, u.avatar_url
+		FROM project_members pm
+		JOIN users u ON u.id = pm.user_id
+		WHERE pm.project_id IN (` + placeholders(len(projectIDs)) + `)
+	`
+
+	memberRows, err := r.db.QueryContext(ctx, memberQuery, projectIDs...)
+	if err != nil {
+		return nil, err
+	}
+	defer memberRows.Close()
+
+	for memberRows.Next() {
+		var projectID int
+		var user models.User
+		if err := memberRows.Scan(&projectID, &user.ID, &user.Name, &user.Username, &user.Email, &user.AvatarUrl); err != nil {
+			return nil, err
+		}
+		if project, exists := projectMap[projectID]; exists {
+			log.Printf("Member ID: %d added to projectID: %d\n", user.ID, projectID)
+			project.Members = append(project.Members, user)
+		}
+	}
+	projects = make([]models.Project, 0, len(projectMap))
+	for _, projectPtr := range projectMap {
+		projects = append(projects, *projectPtr)
+	}
+
 	return projects, nil
+}
+
+// Utility: generates ?,?,? placeholder string for IN clause
+func placeholders(n int) string {
+	var b strings.Builder
+	for i := 0; i < n; i++ {
+		b.WriteString("?")
+		if i < n-1 {
+			b.WriteString(",")
+		}
+	}
+	return b.String()
 }
 
 // GetProjectByID returns a detailed view of a project
@@ -111,7 +174,7 @@ func (r *projectRepoImpl) GetProjectByID(ctx context.Context, currentUserID, pro
 	tasksQuery := `
 		SELECT t.id, t.title, t.description,
 		       p.id, p.name,
-		       s.name,
+		       s.id, s.name,
 		       u.id, u.name, u.username, u.email, u.avatar_url
 		FROM tasks t
 		JOIN priorities p ON p.id = t.priority_id
@@ -129,7 +192,7 @@ func (r *projectRepoImpl) GetProjectByID(ctx context.Context, currentUserID, pro
 		var t models.Task
 		err := taskRows.Scan(&t.ID, &t.Title, &t.Description,
 			&t.Priority.ID, &t.Priority.Name,
-			&t.Status,
+			&t.Status.ID, &t.Status.Name,
 			&t.Assignee.ID, &t.Assignee.Name, &t.Assignee.Username, &t.Assignee.Email, &t.Assignee.AvatarUrl,
 		)
 		if err != nil {

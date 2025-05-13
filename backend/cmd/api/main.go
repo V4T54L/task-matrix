@@ -4,13 +4,17 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"task-matrix-be/internals/authmodule"
 	"task-matrix-be/internals/config"
 	"task-matrix-be/internals/dbconnectors"
 	"task-matrix-be/internals/migrate"
+	"task-matrix-be/internals/models"
 	"task-matrix-be/internals/server"
+	"task-matrix-be/internals/services"
 )
 
 func main() {
+	auth := authmodule.NewInMemoryUUIDAuth[models.User]()
 	db, err := dbconnectors.GetSqliteDb(config.GetConfig().DB_PATH)
 	if err != nil {
 		log.Fatal("Error connecting to sqlite db: ", err)
@@ -28,8 +32,16 @@ func main() {
 		log.Fatal("Error mograting database : ", err)
 	}
 
+	user, project, task, err := services.GetServices(db, auth.GetToken)
+	if err != nil {
+		log.Fatal("Error initializing services : ", err)
+	}
+	log.Println("[+] Services Initialized")
+
 	r := server.NewChiRouter()
-	server.RegisterRoutes(r)
+	server.RegisterRoutes(r, user, project, task, auth.Validate)
+
+	log.Println("[+] Routes registered")
 
 	s := http.Server{
 		Addr:    ":8000",

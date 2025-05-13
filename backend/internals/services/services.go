@@ -35,7 +35,7 @@ func GetServices(
 	tokenGenerator func(payload models.User) (string, error),
 ) (UserService, ProjectService, TaskService, error) {
 	if db == nil || tokenGenerator == nil {
-		return nil, nil, nil, errors.New("invakid params passed to GetServices")
+		return nil, nil, nil, errors.New("invalid params passed to GetServices")
 	}
 
 	ur, pr, tr, err := repo.GetRepos(db)
