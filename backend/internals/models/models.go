@@ -35,7 +35,7 @@ type Task struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Priority    Priority `json:"priority"`
-	Status      string   `json:"status"`
+	Status      Status   `json:"status"`
 	Assignee    User     `json:"assignee"`
 }
 

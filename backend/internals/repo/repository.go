@@ -2,6 +2,8 @@ package repo
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"task-matrix-be/internals/models"
 )
 
@@ -24,4 +26,14 @@ type TaskRepo interface {
 	CreateTask(ctx context.Context, currentUserID, projectID int, title, description string, priorityID, statusID, assigneeID int) (id int, err error)
 	UpdateTaskByID(ctx context.Context, currentUserID, projectID, taskID int, title, description string, priorityID, statusID, assigneeID int) (err error)
 	DeleteTaskByID(ctx context.Context, currentUserID, projectID, taskID int) (err error)
+}
+
+func GetRepos(db *sql.DB) (
+	UserRepo, ProjectRepo, TaskRepo, error,
+) {
+	if db == nil {
+		return nil, nil, nil, errors.New("nil value provided for db param in GetRepos")
+	}
+
+	return &userRepoImpl{db: db}, &projectRepoImpl{db: db}, &taskRepoImpl{db: db}, nil
 }

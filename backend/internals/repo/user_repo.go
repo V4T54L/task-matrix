@@ -11,10 +11,6 @@ type userRepoImpl struct {
 	db *sql.DB
 }
 
-func NewUserRepo(db *sql.DB) UserRepo {
-	return &userRepoImpl{db: db}
-}
-
 func (r *userRepoImpl) CreateUser(ctx context.Context, name, username, email, avatarUrl, hashedPassword string) (int, error) {
 	query := `
 		INSERT INTO users (name, username, email, avatar_url, password)

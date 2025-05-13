@@ -11,10 +11,6 @@ type projectRepoImpl struct {
 	db *sql.DB
 }
 
-func NewProjectRepo(db *sql.DB) ProjectRepo {
-	return &projectRepoImpl{db: db}
-}
-
 // CreateProject inserts a new project with currentUserID as the owner
 func (r *projectRepoImpl) CreateProject(ctx context.Context, currentUserID int, name, description, dueDate string) (int, error) {
 	query := `

@@ -10,10 +10,6 @@ type taskRepoImpl struct {
 	db *sql.DB
 }
 
-func NewTaskRepo(db *sql.DB) TaskRepo {
-	return &taskRepoImpl{db: db}
-}
-
 // CreateTask inserts a new task into the database
 func (r *taskRepoImpl) CreateTask(ctx context.Context, currentUserID, projectID int, title, description string, priorityID, statusID, assigneeID int) (int, error) {
 	// Optional: You can check here if the currentUserID has access to the project

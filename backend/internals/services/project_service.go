@@ -16,10 +16,6 @@ type projectServiceImpl struct {
 	repo repo.ProjectRepo
 }
 
-func NewProjuctService(repo repo.ProjectRepo) ProjectService {
-	return &projectServiceImpl{repo: repo}
-}
-
 func (s *projectServiceImpl) CreateProject(w http.ResponseWriter, r *http.Request) {
 	currentUser, ok := r.Context().Value(middlewares.UserContextKey).(models.User)
 	if !ok {

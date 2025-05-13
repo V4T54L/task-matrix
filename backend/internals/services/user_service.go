@@ -14,10 +14,6 @@ type userServiceImpl struct {
 	tokenGenerator func(payload models.User) (string, error)
 }
 
-func NewUserService(repo repo.UserRepo) UserService {
-	return &userServiceImpl{repo: repo}
-}
-
 func (s *userServiceImpl) Login(w http.ResponseWriter, r *http.Request) {
 	var payload models.LoginPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
