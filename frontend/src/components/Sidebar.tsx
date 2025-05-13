@@ -29,7 +29,7 @@ const Sidebar = ({ children }: { children: ReactNode }) => {
     // TODO: Make this responsive; Drawer for smaller screen
 
     return (
-        <div className="h-screen w-screen flex">
+        <div className="flex-1 flex overflow-auto">
             <aside className="w-fit md:w-64 bg-background border-r border-secondary">
                 {
                     navs && (

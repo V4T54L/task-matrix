@@ -8,9 +8,8 @@ const Layout = () => {
   const { logout } = useAuth();
 
   return (
-    <>
+    <div className="flex h-screen w-screen flex-col">
       <div className=" bg-background">
-
         <header className="w-full max-w-7xl flex items-center justify-between mx-auto p-4">
           {/* Logo */}
           <h2 className="flex items-center gap-4 text-xl font-semibold w-fit">
@@ -27,7 +26,7 @@ const Layout = () => {
       <Sidebar>
         <Outlet />
       </Sidebar>
-    </>
+    </div>
   )
 }
 

@@ -1,9 +1,10 @@
 import { KeyRound, LogIn, User } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Button } from "../ui/Button";
-import { NavLink, useNavigate } from "react-router-dom";
-import type { User as UserDetail } from "../../types";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/authProvider";
+import { login } from "../../api/auth";
+import { getErrorString } from "../../utils";
 
 type FormFields = {
     username: string;
@@ -12,19 +13,16 @@ type FormFields = {
 
 const Login = () => {
     const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<FormFields>();
-    const { login } = useAuth();
-    const navigate = useNavigate();
+    const { setupLogin } = useAuth();
 
     const onSubmit: SubmitHandler<FormFields> = async (data) => {
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000))
-            const newUser: UserDetail = { id: 20, name: "Test User" }
-            login(newUser, "token")
-            navigate("/")
-        } catch (error) {
+            const { token, user } = await login(data)
+            setupLogin(user, token)
+        } catch (error: unknown) {
             setError("root", {
-                message: "Invalid credentials",
-            })
+                message: getErrorString(error),
+            });
         }
         console.log(data)
     }
@@ -52,7 +50,7 @@ const Login = () => {
                                 id="username" {...register("username", {
                                     required: "username is required",
                                     minLength: {
-                                        value: 8,
+                                        value: 1,
                                         message: "Username must have 8 characters"
                                     },
                                 })} type="text"
@@ -72,7 +70,7 @@ const Login = () => {
                                 id="password" {...register("password", {
                                     required: "password is required",
                                     minLength: {
-                                        value: 8,
+                                        value: 1,
                                         message: "Password must have 8 characters"
                                     },
                                 })} type="password"

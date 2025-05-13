@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import type { Task } from '../types';
+import type { Member, Task, TaskPayload } from '../types';
 import { mockPriorities } from '../mock/priorities';
 import { mockTaskStatus } from '../mock/status';
-import { mockProjects } from '../mock/projects';
 
 interface TaskModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (task: Task) => void;
+    onSave: (task: TaskPayload) => void;
     taskToEdit?: Task;
+    projectMembers: Member[];
 }
 
 type TaskFormFields = {
@@ -20,7 +20,7 @@ type TaskFormFields = {
     assignee_id: number;
 };
 
-const TaskDetailModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, taskToEdit }) => {
+const TaskDetailModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, taskToEdit, projectMembers }) => {
     const {
         register,
         handleSubmit,
@@ -31,11 +31,7 @@ const TaskDetailModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, ta
     });
 
     const onSubmit: SubmitHandler<TaskFormFields> = (data) => {
-        const newTask: Task = {
-            id: taskToEdit?.id ?? Date.now(), // fallback ID generator
-            ...data,
-        };
-        onSave(newTask);
+        onSave(data);
         onClose();
     };
 
@@ -44,9 +40,9 @@ const TaskDetailModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, ta
             reset({
                 title: taskToEdit.title,
                 description: taskToEdit.description,
-                priority_id: taskToEdit.priority_id,
-                status_id: taskToEdit.status_id,
-                assignee_id: taskToEdit.assignee_id,
+                priority_id: taskToEdit.priority.id,
+                status_id: taskToEdit.status.id,
+                assignee_id: taskToEdit.assignee.id,
             });
         }
     }, [taskToEdit, reset]);
@@ -137,7 +133,7 @@ const TaskDetailModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, ta
                                     className="w-full mt-1 p-2 border border-gray-300 rounded-md"
                                 >
                                     <option value={0}>Unassigned</option>
-                                    {mockProjects[0].members.map(member => (
+                                    {projectMembers.map(member => (
                                         <option key={member.id} value={member.id}>
                                             {member.name}
                                         </option>

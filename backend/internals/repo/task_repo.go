@@ -14,10 +14,10 @@ type taskRepoImpl struct {
 func (r *taskRepoImpl) CreateTask(ctx context.Context, currentUserID, projectID int, title, description string, priorityID, statusID, assigneeID int) (int, error) {
 	// Optional: You can check here if the currentUserID has access to the project
 	query := `
-		INSERT INTO tasks (title, description, priority_id, assignee_id, project_id)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO tasks (title, description, priority_id, assignee_id, project_id, status_id)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.ExecContext(ctx, query, title, description, priorityID, assigneeID, projectID)
+	result, err := r.db.ExecContext(ctx, query, title, description, priorityID, assigneeID, projectID, 1)
 	if err != nil {
 		return 0, fmt.Errorf("create task: %w", err)
 	}

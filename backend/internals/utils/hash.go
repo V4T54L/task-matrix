@@ -1,12 +1,19 @@
 package utils
 
-func Hash(plain string) (string, error) {
-	// TODO: Implement a better hash function.
-	// hash, err := bcrypt.GenerateFromPassword([]byte(plain), bcrypt.DefaultCost)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// return string(hash), nil
+import (
+	"crypto/sha512"
+	"encoding/hex"
+	"task-matrix-be/internals/config"
+)
 
-	return plain + "_hash", nil
+func Hash(plain string) (string, error) {
+	hasher := sha512.New()
+
+	hasher.Write([]byte(plain + config.GetConfig().HashSecret))
+
+	hash := hasher.Sum(nil)
+
+	hashHex := hex.EncodeToString(hash)
+
+	return hashHex, nil
 }

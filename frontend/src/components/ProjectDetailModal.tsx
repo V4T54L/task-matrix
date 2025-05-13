@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import type { Project } from '../types';
+import type { Project, ProjectPayload } from '../types';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { mockProjectStatus } from '../mock/status';
 
 interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (project: Project) => void;
+    onSave: (id: number, project: ProjectPayload) => void;
     projectToEdit?: Project;
 }
 
@@ -18,29 +18,30 @@ type FormFields = {
 }
 
 const ProjectDetailModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, projectToEdit }) => {
-    const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<FormFields>({
-        defaultValues: { ...projectToEdit }
-    });
+    const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<FormFields>({});
 
 
     const onSubmit: SubmitHandler<FormFields> = async (data) => {
-        const newProject: Project = {
-            id: projectToEdit?.id ?? 1,
-            ...data,
-            status: mockProjectStatus.find(e => e.id == data.status_id)?.name + "",
-            members: [],
-            tasks_completed: 0,
-            total_tasks: 0,
-        };
-        onSave(newProject);
+        onSave(projectToEdit ? projectToEdit.id : 0, data);
+        // console.log(data)
         onClose();  // Close the modal after saving
-        console.log("New project created: ", newProject);
     };
 
     useEffect(() => {
         if (projectToEdit) {
-            reset(projectToEdit)
+            reset({
+                description: projectToEdit.description,
+                due_date: new Date(projectToEdit.due_date).toISOString().split("T")[0],
+                name: projectToEdit.name,
+                status_id: projectToEdit.status.id,
+            })
+        } else {
+            reset({
+                description: "", due_date: new Date(Date.now()).toISOString().split("T")[0],
+                name: "", status_id: 1,
+            })
         }
+
     }, [projectToEdit, reset])
 
     return (

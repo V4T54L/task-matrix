@@ -1,21 +1,35 @@
 import { ArrowLeftCircle } from "lucide-react"
 import { Button } from "../components/ui/Button"
 import { useNavigate, useParams } from "react-router-dom"
-import { mockProjects } from "../mock/projects";
-import type { Project } from "../types";
+import type { ProjectDetail } from "../types";
 import TeamKanbanBoard from "../components/KanbanBoard";
-import { mockTasks } from "../mock/tasks";
+import { useEffect, useState } from "react";
+import { getProjectDetail } from "../api/projects";
+import { getErrorString } from "../utils";
 
 const ProjectBoard = () => {
     const { id } = useParams();
-    const currentProject: Project | undefined = mockProjects.find(e => id && e.id == parseInt(id))
+    const [project, setProject] = useState<ProjectDetail>();
+    const [error, setError] = useState("")
     const navigate = useNavigate()
 
-    if (!currentProject) {
-        return <>
-            Project not found
-        </>
+    const fetchProjectDetail = async () => {
+        if (!id) return;
+        setError("")
+
+        const projectId = parseInt(id)
+        if (!projectId) return;
+        try {
+            const p = await getProjectDetail(projectId);
+            setProject(p)
+        } catch (error) {
+            setError(getErrorString(error));
+        }
     }
+
+    useEffect(() => {
+        fetchProjectDetail()
+    }, [id])
 
     return (
         <>
@@ -28,10 +42,19 @@ const ProjectBoard = () => {
                 </h3>
             </Button>
 
-            <h1 className="text-3xl font-bold mt-8">{currentProject.name}</h1>
-            <h2 className="font-light mb-8">{currentProject.description}</h2>
+            {
+                !project ? (
+                    <p className="mt-12 text-xl">Project</p>
+                ) : (
+                    <>
+                        <h1 className="text-3xl font-bold mt-8">{project.name}</h1 >
+                        <h2 className="font-light mb-8">{project.description}</h2>
 
-            <TeamKanbanBoard members={currentProject.members} tasks={mockTasks} />
+                        <TeamKanbanBoard members={project.members ? project.members : []} tasks={project.tasks ? project.tasks : []}
+                            projectId={project.id} />
+                    </>
+                )
+            }
         </>
     )
 }

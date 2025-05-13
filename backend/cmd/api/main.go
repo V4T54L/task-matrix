@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+	// TODO: Add restrictions on fetching and updating projects & tasks
 	auth := authmodule.NewInMemoryUUIDAuth[models.User]()
 	db, err := dbconnectors.GetSqliteDb(config.GetConfig().DB_PATH)
 	if err != nil {
@@ -44,7 +45,7 @@ func main() {
 	log.Println("[+] Routes registered")
 
 	s := http.Server{
-		Addr:    ":8000",
+		Addr:    config.GetConfig().SERVER_PORT,
 		Handler: r,
 	}
 

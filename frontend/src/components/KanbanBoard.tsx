@@ -1,45 +1,43 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
     DragDropContext,
     Droppable,
     Draggable,
     type DropResult,
 } from '@hello-pangea/dnd';
-import type { Member, Status, Task, Priority } from '../types';
+import type { Member, Status, Task, TaskPayload } from '../types';
 import { mockTaskStatus } from '../mock/status';
-import { mockPriorities } from '../mock/priorities';
 import { Button } from './ui/Button';
 import TaskDetailModal from './TaskDetailModal';
 import { Eye, Pen, Trash } from 'lucide-react';
 import ViewTaskModal from './ViewTaskModal';
+import { createTask, deleteTask, updateTask } from '../api/tasks';
+import { getErrorString } from '../utils';
+import { mockPriorities } from '../mock/priorities';
 
 type TeamKanbanBoardProps = {
+    projectId: number;
     tasks: Task[],
     members: Member[],
 }
 
-const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => {
+const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks, projectId }) => {
     const [items, setItems] = useState<Task[]>(tasks);
     const [statuses] = useState<Status[]>(mockTaskStatus);
-    const [priorities] = useState<Priority[]>(mockPriorities);
     const [IsTaskModalOpen, setIsTaskModalOpen] = useState(false)
-    const currentTask = useRef<Task | undefined>(undefined)
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [selectedTaskID, setSelectedTaskID] = useState<number | null>(null);
     const [isViewModalOpen, setViewModalOpen] = useState(false);
+    const [error, setError] = useState("")
 
-    const handleViewTask = (task: Task) => {
-        setSelectedTask(task);
+    const openViewTask = (id: number) => {
+        setSelectedTaskID(id);
         setViewModalOpen(true);
     };
 
-    const handleEditTask = (task: Task) => {
-        setSelectedTask(task);
-        setIsTaskModalOpen(true);
+    const closeViewModal = () => {
+        setSelectedTaskID(null);
+        setViewModalOpen(false);
     };
-
-
-
-    const getPriority = (id: number) => priorities.find(p => p.id === id);
 
     const getPriorityColor = (name: string) => {
         switch (name.toLowerCase()) {
@@ -54,8 +52,37 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
         }
     };
 
-    const handleDeleteTask = (taskId: number) => {
-        setItems(prev => prev.filter(task => task.id !== taskId));
+    const handleDeleteTask = async (taskId: number) => {
+        setError("")
+        try {
+            await deleteTask(projectId, taskId);
+            setItems(prev => prev.filter(task => task.id !== taskId));
+        } catch (error) {
+            setError(getErrorString(error));
+        }
+    };
+
+    const EditTask = async (payload: TaskPayload) => {
+        setError("")
+        try {
+            if (selectedTaskID) {
+                await updateTask(projectId, selectedTaskID, payload)
+                const updated: Task = {
+                    assignee: members.find(e => e.id == payload.assignee_id)!,
+                    description: payload.description,
+                    id: selectedTaskID,
+                    priority: mockPriorities.find(p => p.id === payload.priority_id)!,
+                    status: mockTaskStatus.find(p => p.id === payload.status_id)!,
+                    title: payload.title,
+                }
+                setItems(prev => prev.map(t => t.id === updated.id ? updated : t));
+            } else {
+                const task = await createTask(projectId, payload);
+                setItems(prev => [...prev, task]);
+            }
+        } catch (error) {
+            setError(getErrorString(error));
+        }
     };
 
     const onDragEnd = (result: DropResult) => {
@@ -75,13 +102,13 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
 
         if (source.droppableId === destination.droppableId) {
             const cellItems = newItems.filter(
-                item => item.assignee_id.toString() === destAssigneeId && item.status_id.toString() === destStatusId
+                item => item.assignee.id.toString() === destAssigneeId && item.status.id.toString() === destStatusId
             );
             const [reorderedItem] = cellItems.splice(source.index, 1);
             cellItems.splice(destination.index, 0, reorderedItem);
 
             const otherItems = newItems.filter(
-                item => !(item.assignee_id.toString() === destAssigneeId && item.status_id.toString() === destStatusId)
+                item => !(item.assignee.id.toString() === destAssigneeId && item.status.id.toString() === destStatusId)
             );
 
             newItems = [...otherItems, ...cellItems];
@@ -96,12 +123,12 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
             newItems = newItems.filter(item => item.id.toString() !== draggableId);
 
             const itemsInDestCell = newItems.filter(
-                item => item.assignee_id.toString() === destAssigneeId && item.status_id.toString() === destStatusId
+                item => item.assignee.id.toString() === destAssigneeId && item.status.id.toString() === destStatusId
             );
             itemsInDestCell.splice(destination.index, 0, updatedMovedItem);
 
             const itemsNotInDestCell = newItems.filter(
-                item => !(item.assignee_id.toString() === destAssigneeId && item.status_id.toString() === destStatusId)
+                item => !(item.assignee.id.toString() === destAssigneeId && item.status.id.toString() === destStatusId)
             );
 
             newItems = [...itemsNotInDestCell, ...itemsInDestCell];
@@ -111,14 +138,13 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
     };
 
 
-    const openEditModal = (projectId: number) => {
-        const task = items.find(e => e.id == projectId)
-        currentTask.current = task
+    const openEditModal = (taskId: number) => {
+        setSelectedTaskID(taskId)
         setIsTaskModalOpen(true)
     }
 
     const closeEditModal = () => {
-        currentTask.current = undefined
+        setSelectedTaskID(null)
         setIsTaskModalOpen(false)
     }
 
@@ -143,7 +169,7 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
                                 {statuses.map(status => {
                                     const droppableId = `${member.id}--${status.id}`;
                                     const currentCellItems = items.filter(
-                                        item => item.assignee_id === member.id && item.status_id === status.id
+                                        item => item.assignee.id === member.id && item.status.id === status.id
                                     );
 
                                     return (
@@ -183,14 +209,14 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
                                                                             <div className="flex flex-col items-end gap-1">
                                                                                 <div className="flex gap-1">
                                                                                     <button
-                                                                                        onClick={() => handleEditTask(item)}
+                                                                                        onClick={() => openEditModal(item.id)}
                                                                                         className="p-1 hover:bg-gray-200 rounded"
                                                                                         title="Edit"
                                                                                     >
                                                                                         <Pen className="w-4 h-4 text-gray-600" />
                                                                                     </button>
                                                                                     <button
-                                                                                        onClick={() => handleViewTask(item)}
+                                                                                        onClick={() => openViewTask(item.id)}
                                                                                         className="p-1 hover:bg-gray-200 rounded"
                                                                                         title="View"
                                                                                     >
@@ -204,8 +230,8 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
                                                                                         <Trash className="w-4 h-4 text-red-600" />
                                                                                     </button>
                                                                                 </div>
-                                                                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getPriorityColor(getPriority(item.priority_id)?.name || '')}`}>
-                                                                                    {getPriority(item.priority_id)?.name}
+                                                                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getPriorityColor(item.priority.name || '')}`}>
+                                                                                    {item.priority.name}
                                                                                 </span>
                                                                             </div>
                                                                         </div>
@@ -235,11 +261,16 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks }) => 
                 </div>
             </DragDropContext>
 
-            <TaskDetailModal isOpen={IsTaskModalOpen} onClose={closeEditModal} onSave={() => { }} taskToEdit={selectedTask ? selectedTask : undefined} />
+            <TaskDetailModal
+                isOpen={IsTaskModalOpen} onClose={closeEditModal} onSave={EditTask}
+                taskToEdit={selectedTaskID ? items.find(e => e.id === selectedTaskID) : undefined}
+                projectMembers={members}
+            />
             <ViewTaskModal
-                task={selectedTask}
+                task={items.find(e => e.id === selectedTaskID)!}
                 isOpen={isViewModalOpen}
-                onClose={() => setViewModalOpen(false)}
+                onClose={closeViewModal}
+                members={members}
             />
 
         </>

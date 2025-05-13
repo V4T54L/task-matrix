@@ -10,6 +10,7 @@ interface ProjectCardProps extends Project {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
+    id,
     name,
     description,
     due_date,
@@ -23,7 +24,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     onViewBoard,
 }) => {
     // Calculate the progress percentage
-    const progress = (tasks_completed / total_tasks) * 100;
+    const progress = (tasks_completed / (total_tasks + 0.00001)) * 100;
 
     return (
         <div className="bg-white shadow-lg rounded-lg p-4 w-full">
@@ -38,11 +39,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
             {/* Member Avatars */}
             <div className="flex -space-x-2 mb-4">
-                {members.slice(0, 4).map((member, index) => (
+                {members.map((member) => (
                     <img
-                        key={index}
+                        key={`${id}:${member.id}`}
                         src={member.avatar_url}
-                        alt={`Member ${index + 1}`}
+                        alt={member.name}
                         className="w-8 h-8 rounded-full border-2 border-white"
                     />
                 ))}
@@ -62,7 +63,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 <div className="relative pt-1">
                     <div className="flex mb-2 items-center justify-between">
                         <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-teal-600 bg-teal-200">
-                            {status}
+                            {status.name}
                         </span>
                     </div>
                     <div className="flex mb-2">

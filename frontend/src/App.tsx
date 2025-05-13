@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom"
+import { Route, Routes } from "react-router-dom"
 import AuthLayout from "./components/AuthLayout"
 import Signup from "./components/forms/Signup"
 import Login from "./components/forms/Login"
@@ -13,26 +13,24 @@ import ProtectedRoute from "./components/ProtectedRoute"
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="auth" element={<AuthLayout />}>
-          <Route path="signup" element={<Signup />} />
-          <Route path="login" element={<Login />} />
-        </Route>
-        <Route path="" element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }>
-          <Route path="" element={<Dashboard />} />
-          <Route path="projects" element={<Projects />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="setting" element={<Settings />} />
-          <Route path="projects/:id" element={<ProjectBoard />} />
-        </Route>
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="auth" element={<AuthLayout />}>
+        <Route path="signup" element={<Signup />} />
+        <Route path="login" element={<Login />} />
+      </Route>
+      <Route path="" element={
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      }>
+        <Route path="" element={<Dashboard />} />
+        <Route path="projects" element={<Projects />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="setting" element={<Settings />} />
+        <Route path="projects/:id" element={<ProjectBoard />} />
+      </Route>
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   )
 }
 

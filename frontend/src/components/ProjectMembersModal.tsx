@@ -4,33 +4,13 @@ import type { Member } from '../types';
 interface MembersModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (members: Member[]) => void;
-    existingMembers: Member[];
+    onAddMember: (username: string) => void;
+    onRemoveMember: (userId: number) => void;
+    members: Member[];
 }
 
-const ProjectMembersModal: React.FC<MembersModalProps> = ({ isOpen, onClose, onSave, existingMembers }) => {
-    const [members, setMembers] = useState<Member[]>(existingMembers);
+const ProjectMembersModal: React.FC<MembersModalProps> = ({ isOpen, onClose, onAddMember, onRemoveMember, members }) => {
     const [newMemberName, setNewMemberName] = useState('');
-
-    const handleAddMember = () => {
-        if (!newMemberName.trim()) return;
-        const newMember: Member = {
-            id: Date.now(),
-            name: newMemberName.trim(),
-            avatar_url: `https://api.dicebear.com/6.x/personas/svg?seed=${encodeURIComponent(newMemberName.trim())}`
-        };
-        setMembers([...members, newMember]);
-        setNewMemberName('');
-    };
-
-    const handleDeleteMember = (id: number) => {
-        setMembers(members.filter(member => member.id !== id));
-    };
-
-    const handleSave = () => {
-        onSave(members);
-        onClose();
-    };
 
     return isOpen ? (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
@@ -52,7 +32,7 @@ const ProjectMembersModal: React.FC<MembersModalProps> = ({ isOpen, onClose, onS
                                 <span>{member.name}</span>
                             </div>
                             <button
-                                onClick={() => handleDeleteMember(member.id)}
+                                onClick={() => onRemoveMember(member.id)}
                                 className="text-red-500 hover:text-red-700 text-sm"
                             >
                                 Remove
@@ -67,11 +47,11 @@ const ProjectMembersModal: React.FC<MembersModalProps> = ({ isOpen, onClose, onS
                         type="text"
                         value={newMemberName}
                         onChange={(e) => setNewMemberName(e.target.value)}
-                        placeholder="Enter member name"
+                        placeholder="Enter username"
                         className="flex-1 border border-gray-300 p-2 rounded-md"
                     />
                     <button
-                        onClick={handleAddMember}
+                        onClick={() => { onAddMember(newMemberName); setNewMemberName("") }}
                         className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
                     >
                         Add
@@ -79,20 +59,13 @@ const ProjectMembersModal: React.FC<MembersModalProps> = ({ isOpen, onClose, onS
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-between space-x-3">
-                    <button
-                        onClick={onClose}
-                        className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700"
-                    >
-                        Save Members
-                    </button>
-                </div>
+                <button
+                    onClick={onClose}
+                    className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300"
+                >
+                    Cancel
+                </button>
+
             </div>
         </div>
     ) : null;

@@ -2,6 +2,9 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { NavLink } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { IdCard, KeyRound, LogIn, Mail, User } from "lucide-react";
+import { signup } from "../../api/auth";
+import { useAuth } from "../../context/authProvider";
+import { getErrorString } from "../../utils";
 
 type FormFields = {
     name: string;
@@ -13,6 +16,7 @@ type FormFields = {
 
 const Signup = () => {
     const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<FormFields>()
+    const { setupLogin } = useAuth();
 
     const onSubmit: SubmitHandler<FormFields> = async (data) => {
         if (data.password != data.confirm_password) {
@@ -22,13 +26,14 @@ const Signup = () => {
         }
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000))
-            throw new Error();
-        } catch (error) {
+            const { token, user } = await signup({ name: data.name, username: data.username, email: data.email, password: data.password, confirm_password: data.confirm_password })
+            setupLogin(user, token)
+        } catch (error: unknown) {
             setError("root", {
-                message: "Username Already exists",
-            })
+                message: getErrorString(error),
+            });
         }
+
         console.log(data)
     }
 

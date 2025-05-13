@@ -1,21 +1,21 @@
 import React from 'react';
-import type { Task } from '../types';
+import type { Member, Task } from '../types';
 import { mockPriorities } from '../mock/priorities';
 import { mockTaskStatus } from '../mock/status';
-import { mockProjects } from '../mock/projects';
 
 type ViewTaskModalProps = {
     task: Task | null;
     isOpen: boolean;
     onClose: () => void;
+    members: Member[];
 };
 
-const ViewTaskModal: React.FC<ViewTaskModalProps> = ({ task, isOpen, onClose }) => {
+const ViewTaskModal: React.FC<ViewTaskModalProps> = ({ task, isOpen, onClose, members }) => {
     if (!isOpen || !task) return null;
 
-    const priority = mockPriorities.find(p => p.id === task.priority_id)?.name || 'Unknown';
-    const status = mockTaskStatus.find(s => s.id === task.status_id)?.name || 'Unknown';
-    const assignee = mockProjects[0].members.find(m => m.id === task.assignee_id);
+    const priority = mockPriorities.find(p => p.id === task.priority.id)?.name || 'Unknown';
+    const status = mockTaskStatus.find(s => s.id === task.status.id)?.name || 'Unknown';
+    const assignee = members.find(m => m.id === task.assignee.id);
 
     return (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex justify-center items-center">
