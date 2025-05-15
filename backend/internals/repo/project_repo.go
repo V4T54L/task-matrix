@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 	"task-matrix-be/internals/models"
 )
@@ -20,27 +19,21 @@ func (r *projectRepoImpl) CreateProject(ctx context.Context, currentUserID int, 
 		return 0, fmt.Errorf("begin transaction: %w", err)
 	}
 
-	// Insert the project with status_id = 1
 	insertProjectQuery := `
-		INSERT INTO projects (owner_id, title, description, due_date, status_id)
-		VALUES (?, ?, ?, ?, 1)
+		INSERT INTO projects (owner_id, title, description, due_date)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id
 	`
-	result, err := tx.ExecContext(ctx, insertProjectQuery, currentUserID, name, description, dueDate)
+	var projectID int
+	err = tx.QueryRowContext(ctx, insertProjectQuery, currentUserID, name, description, dueDate).Scan(&projectID)
 	if err != nil {
 		tx.Rollback()
 		return 0, fmt.Errorf("insert project: %w", err)
 	}
 
-	projectID, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return 0, fmt.Errorf("get last insert id: %w", err)
-	}
-
-	// Insert the owner into project_members
 	insertMemberQuery := `
 		INSERT INTO project_members (project_id, user_id)
-		VALUES (?, ?)
+		VALUES ($1, $2)
 	`
 	_, err = tx.ExecContext(ctx, insertMemberQuery, projectID, currentUserID)
 	if err != nil {
@@ -52,13 +45,11 @@ func (r *projectRepoImpl) CreateProject(ctx context.Context, currentUserID int, 
 		return 0, fmt.Errorf("commit transaction: %w", err)
 	}
 
-	return int(projectID), nil
+	return projectID, nil
 }
-
 
 // GetProjects returns all projects the user owns or is a member of
 func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([]models.Project, error) {
-	// Step 1: Get core project data
 	query := `
 		SELECT
 			p.id, p.title, p.description, p.due_date,
@@ -70,11 +61,11 @@ func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([
 		JOIN statuses s ON s.id = p.status_id
 		JOIN users u ON u.id = p.owner_id
 		LEFT JOIN project_members pm ON pm.project_id = p.id
-		WHERE p.deleted_at IS NULL AND (p.owner_id = ? OR pm.user_id = ?)
-		GROUP BY p.id
+		WHERE p.deleted_at IS NULL AND pm.user_id = $1
+		GROUP BY p.id, s.id, u.id
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, currentUserID, currentUserID)
+	rows, err := r.db.QueryContext(ctx, query, currentUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -98,17 +89,14 @@ func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([
 		projects = append(projects, p)
 	}
 
-	// Step 2: Fetch members for all projects in one query
 	if len(projects) == 0 {
-		return projects, nil // no projects found
+		return make([]models.Project, 0), nil
 	}
 
 	projectIDs := make([]any, 0, len(projects))
 	for _, p := range projects {
 		projectIDs = append(projectIDs, p.ID)
 	}
-
-	log.Println("Project IDs : ", projectIDs)
 
 	memberQuery := `
 		SELECT
@@ -132,28 +120,16 @@ func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([
 			return nil, err
 		}
 		if project, exists := projectMap[projectID]; exists {
-			log.Printf("Member ID: %d added to projectID: %d\n", user.ID, projectID)
 			project.Members = append(project.Members, user)
 		}
 	}
+
 	projects = make([]models.Project, 0, len(projectMap))
 	for _, projectPtr := range projectMap {
 		projects = append(projects, *projectPtr)
 	}
 
 	return projects, nil
-}
-
-// Utility: generates ?,?,? placeholder string for IN clause
-func placeholders(n int) string {
-	var b strings.Builder
-	for i := 0; i < n; i++ {
-		b.WriteString("?")
-		if i < n-1 {
-			b.WriteString(",")
-		}
-	}
-	return b.String()
 }
 
 // GetProjectByID returns a detailed view of a project
@@ -167,7 +143,7 @@ func (r *projectRepoImpl) GetProjectByID(ctx context.Context, currentUserID, pro
 		FROM projects p
 		JOIN statuses s ON s.id = p.status_id
 		JOIN users u ON u.id = p.owner_id
-		WHERE p.id = ? AND p.deleted_at IS NULL
+		WHERE p.id = $1 AND p.deleted_at IS NULL
 	`
 	err := r.db.QueryRowContext(ctx, projectQuery, projectID).Scan(
 		&pd.ID, &pd.Name, &pd.Description, &pd.DueDate,
@@ -178,12 +154,11 @@ func (r *projectRepoImpl) GetProjectByID(ctx context.Context, currentUserID, pro
 		return pd, fmt.Errorf("get project by ID: %w", err)
 	}
 
-	// Members
 	membersQuery := `
 		SELECT u.id, u.name, u.username, u.email, u.avatar_url
 		FROM project_members pm
 		JOIN users u ON u.id = pm.user_id
-		WHERE pm.project_id = ?
+		WHERE pm.project_id = $1
 	`
 	memberRows, err := r.db.QueryContext(ctx, membersQuery, projectID)
 	if err != nil {
@@ -199,7 +174,6 @@ func (r *projectRepoImpl) GetProjectByID(ctx context.Context, currentUserID, pro
 		pd.Members = append(pd.Members, u)
 	}
 
-	// Tasks
 	tasksQuery := `
 		SELECT t.id, t.title, t.description,
 		       p.id, p.name,
@@ -209,7 +183,7 @@ func (r *projectRepoImpl) GetProjectByID(ctx context.Context, currentUserID, pro
 		JOIN priorities p ON p.id = t.priority_id
 		JOIN statuses s ON s.id = t.status_id
 		JOIN users u ON u.id = t.assignee_id
-		WHERE t.project_id = ?
+		WHERE t.project_id = $1
 	`
 	taskRows, err := r.db.QueryContext(ctx, tasksQuery, projectID)
 	if err != nil {
@@ -237,15 +211,14 @@ func (r *projectRepoImpl) GetProjectByID(ctx context.Context, currentUserID, pro
 func (r *projectRepoImpl) UpdateProjectByID(ctx context.Context, currentUserID, projectID int, name, description, dueDate string, statusId int) (models.Project, error) {
 	query := `
 		UPDATE projects
-		SET title = ?, description = ?, due_date = ?, status_id = ?
-		WHERE id = ? AND owner_id = ?
+		SET title = $1, description = $2, due_date = $3, status_id = $4
+		WHERE id = $5 AND owner_id = $6;
 	`
 	_, err := r.db.ExecContext(ctx, query, name, description, dueDate, statusId, projectID, currentUserID)
 	if err != nil {
 		return models.Project{}, fmt.Errorf("update project: %w", err)
 	}
 
-	// Re-fetch as Project
 	projects, err := r.GetProjects(ctx, currentUserID)
 	if err != nil {
 		return models.Project{}, err
@@ -262,9 +235,8 @@ func (r *projectRepoImpl) UpdateProjectByID(ctx context.Context, currentUserID, 
 func (r *projectRepoImpl) AddMemberToProject(ctx context.Context, currentUserID, projectID int, username string) (models.User, error) {
 	var u models.User
 
-	// Step 1: Check if the current user is the owner
 	var ownerID int
-	err := r.db.QueryRowContext(ctx, `SELECT owner_id FROM projects WHERE id = ?`, projectID).Scan(&ownerID)
+	err := r.db.QueryRowContext(ctx, `SELECT owner_id FROM projects WHERE id = $1`, projectID).Scan(&ownerID)
 	if err != nil {
 		return u, fmt.Errorf("project not found or fetch failed: %w", err)
 	}
@@ -272,17 +244,15 @@ func (r *projectRepoImpl) AddMemberToProject(ctx context.Context, currentUserID,
 		return u, fmt.Errorf("permission denied: user is not the owner of the project")
 	}
 
-	// Step 2: Get user by username
 	query := `
-		SELECT id, name, username, email, avatar_url FROM users WHERE username = ?
+		SELECT id, name, username, email, avatar_url FROM users WHERE username = $1
 	`
 	err = r.db.QueryRowContext(ctx, query, username).Scan(&u.ID, &u.Name, &u.Username, &u.Email, &u.AvatarUrl)
 	if err != nil {
 		return u, fmt.Errorf("user not found: %w", err)
 	}
 
-	// Step 3: Add user to project
-	_, err = r.db.ExecContext(ctx, `INSERT INTO project_members (project_id, user_id) VALUES (?, ?)`, projectID, u.ID)
+	_, err = r.db.ExecContext(ctx, `INSERT INTO project_members (project_id, user_id) VALUES ($1, $2)`, projectID, u.ID)
 	if err != nil {
 		return u, fmt.Errorf("add member failed: %w", err)
 	}
@@ -292,24 +262,20 @@ func (r *projectRepoImpl) AddMemberToProject(ctx context.Context, currentUserID,
 
 // RemoveMemberFromProject removes a user from the project
 func (r *projectRepoImpl) RemoveMemberFromProject(ctx context.Context, currentUserID, projectID, userID int) error {
-	// Step 1: Check if the current user is the owner
 	var ownerID int
-	err := r.db.QueryRowContext(ctx, `SELECT owner_id FROM projects WHERE id = ?`, projectID).Scan(&ownerID)
+	err := r.db.QueryRowContext(ctx, `SELECT owner_id FROM projects WHERE id = $1`, projectID).Scan(&ownerID)
 	if err != nil {
 		return fmt.Errorf("project not found or fetch failed: %w", err)
 	}
 	if ownerID != currentUserID {
 		return fmt.Errorf("permission denied: user is not the owner of the project")
 	}
-
-	// Step 2: Prevent owner from removing themselves (optional safety check)
 	if userID == currentUserID {
 		return fmt.Errorf("cannot remove project owner from the project")
 	}
 
-	// Step 3: Delete the member
 	_, err = r.db.ExecContext(ctx,
-		`DELETE FROM project_members WHERE project_id = ? AND user_id = ?`,
+		`DELETE FROM project_members WHERE project_id = $1 AND user_id = $2`,
 		projectID, userID)
 	if err != nil {
 		return fmt.Errorf("remove member failed: %w", err)
@@ -317,13 +283,25 @@ func (r *projectRepoImpl) RemoveMemberFromProject(ctx context.Context, currentUs
 	return nil
 }
 
-// DeleteProjectByID soft-deletes a project by marking deleted_at
+// DeleteProjectByID soft-deletes a project
 func (r *projectRepoImpl) DeleteProjectByID(ctx context.Context, currentUserID, projectID int) error {
 	_, err := r.db.ExecContext(ctx,
-		`UPDATE projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND owner_id = ?`,
+		`UPDATE projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND owner_id = $2`,
 		projectID, currentUserID)
 	if err != nil {
 		return fmt.Errorf("delete project failed: %w", err)
 	}
 	return nil
+}
+
+// placeholders generates $1,$2,... for PostgreSQL IN clauses
+func placeholders(n int) string {
+	var b strings.Builder
+	for i := 1; i <= n; i++ {
+		b.WriteString(fmt.Sprintf("$%d", i))
+		if i < n {
+			b.WriteString(", ")
+		}
+	}
+	return b.String()
 }

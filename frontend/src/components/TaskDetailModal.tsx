@@ -7,7 +7,7 @@ import { mockTaskStatus } from '../mock/status';
 interface TaskModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (task: TaskPayload) => void;
+    onSave: (id: number, task: TaskPayload) => void;
     taskToEdit?: Task;
     projectMembers: Member[];
 }
@@ -26,12 +26,11 @@ const TaskDetailModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, ta
         handleSubmit,
         reset,
         formState: { isSubmitting },
-    } = useForm<TaskFormFields>({
-        defaultValues: { ...taskToEdit },
-    });
+    } = useForm<TaskFormFields>();
 
     const onSubmit: SubmitHandler<TaskFormFields> = (data) => {
-        onSave(data);
+        const id = taskToEdit ? taskToEdit.id : 0;
+        onSave(id, data);
         onClose();
     };
 

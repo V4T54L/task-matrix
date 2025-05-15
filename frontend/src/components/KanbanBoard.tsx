@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     DragDropContext,
     Droppable,
@@ -62,15 +62,26 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks, proje
         }
     };
 
-    const EditTask = async (payload: TaskPayload) => {
+    const EditTask = async (id: number, payload: TaskPayload) => {
         setError("")
         try {
-            if (selectedTaskID) {
-                await updateTask(projectId, selectedTaskID, payload)
+            if (id) {
+                const prevTask = items.find(e => e.id === id)
+                if (!prevTask) return;
+
+                // check if value has no change
+                if (payload.assignee_id == prevTask.assignee.id && payload.description == prevTask.description &&
+                    payload.priority_id == prevTask.priority.id && payload.status_id == prevTask.status.id &&
+                    payload.title == prevTask.title) {
+                    // No change
+                    return
+                }
+
+                await updateTask(projectId, id, payload)
                 const updated: Task = {
                     assignee: members.find(e => e.id == payload.assignee_id)!,
                     description: payload.description,
-                    id: selectedTaskID,
+                    id,
                     priority: mockPriorities.find(p => p.id === payload.priority_id)!,
                     status: mockTaskStatus.find(p => p.id === payload.status_id)!,
                     title: payload.title,
@@ -132,6 +143,15 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks, proje
             );
 
             newItems = [...itemsNotInDestCell, ...itemsInDestCell];
+            console.log("Task Id : ", updatedMovedItem.id, itemToMove.id)
+            // setSelectedTaskID(updatedMovedItem.id)
+            EditTask(itemToMove.id, {
+                assignee_id: parseInt(destAssigneeId, 10),
+                description: updatedMovedItem.description,
+                priority_id: updatedMovedItem.priority.id,
+                status_id: parseInt(destStatusId, 10),
+                title: updatedMovedItem.title,
+            })
         }
 
         setItems(newItems);
@@ -148,10 +168,16 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks, proje
         setIsTaskModalOpen(false)
     }
 
+    useEffect(() => {
+        if (error) {
+            console.error(error)
+        }
+    }, [error])
+
 
     return (
         <>
-            <Button size='sm' variant='outline' onClick={() => openEditModal(-1)}>Create Task</Button>
+            <Button size='sm' variant='outline' onClick={() => openEditModal(0)}>Create Task</Button>
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="p-4">
                     {members.map(member => (
@@ -204,7 +230,9 @@ const TeamKanbanBoard: React.FC<TeamKanbanBoardProps> = ({ members, tasks, proje
                                                                         <div className="flex justify-between items-start gap-2">
                                                                             <div className="flex-1">
                                                                                 <div className="text-sm font-medium text-gray-800">{item.title}</div>
+                                                                                {/*
                                                                                 <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                                                                                */}
                                                                             </div>
                                                                             <div className="flex flex-col items-end gap-1">
                                                                                 <div className="flex gap-1">

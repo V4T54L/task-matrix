@@ -31,6 +31,12 @@ const ProjectBoard = () => {
         fetchProjectDetail()
     }, [id])
 
+    useEffect(() => {
+        if (error) {
+            console.error(error)
+        }
+    }, [error])
+
     return (
         <>
             <Button variant="ghost" className="font-normal flex gap-2"

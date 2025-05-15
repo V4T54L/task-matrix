@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://crispy-barnacle-xqjxx59494jf67rw-8000.app.github.dev';
 
 const api = axios.create({
     baseURL: BASE_URL,

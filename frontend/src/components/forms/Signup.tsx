@@ -5,6 +5,8 @@ import { IdCard, KeyRound, LogIn, Mail, User } from "lucide-react";
 import { signup } from "../../api/auth";
 import { useAuth } from "../../context/authProvider";
 import { getErrorString } from "../../utils";
+import { pfpUrls } from "../../mock/pfp_urls";
+import { useState } from "react";
 
 type FormFields = {
     name: string;
@@ -17,6 +19,7 @@ type FormFields = {
 const Signup = () => {
     const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<FormFields>()
     const { setupLogin } = useAuth();
+    const [avatarUrl, setAvatarUrl] = useState("")
 
     const onSubmit: SubmitHandler<FormFields> = async (data) => {
         if (data.password != data.confirm_password) {
@@ -26,7 +29,7 @@ const Signup = () => {
         }
 
         try {
-            const { token, user } = await signup({ name: data.name, username: data.username, email: data.email, password: data.password, confirm_password: data.confirm_password })
+            const { token, user } = await signup({ name: data.name, avatar_url: avatarUrl, username: data.username, email: data.email, password: data.password, confirm_password: data.confirm_password })
             setupLogin(user, token)
         } catch (error: unknown) {
             setError("root", {
@@ -48,6 +51,20 @@ const Signup = () => {
             <div className="space-y-1 text-center">
                 <div className="text-2xl font-bold">Create an Account</div>
                 <div className="text-wrap">Join TaskFlow to start managing your projects efficiently.</div>
+            </div>
+            <div className="border py-2 px-4 m-2 max-w-sm">
+                <p className="font-semibold text-center">Choose your avatar</p>
+                <div className="grid grid-cols-4 gap-4">
+                    {
+                        pfpUrls &&
+                        pfpUrls.map(url => (
+                            <img src={url} key={url} alt="pfp"
+                                className={`rounded-full ${avatarUrl === url && "border border-4 border-blue-400"}`}
+                                onClick={() => setAvatarUrl(url)}
+                            />
+                        ))
+                    }
+                </div>
             </div>
             <div className="my-4">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -150,7 +167,7 @@ const Signup = () => {
 
                         <Button type="submit" className="w-full" disabled={isSubmitting}>
                             <LogIn className="mr-2 h-4 w-4" />
-                            Sign In
+                            Sign Up
                         </Button>
                         {
                             errors.root && (

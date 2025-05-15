@@ -16,7 +16,7 @@ func (r *taskRepoImpl) isProjectMember(ctx context.Context, userID, projectID in
 	query := `
 		SELECT EXISTS (
 			SELECT 1 FROM project_members
-			WHERE user_id = ? AND project_id = ?
+			WHERE user_id = $1 AND project_id = $2
 		)
 	`
 	err := r.db.QueryRowContext(ctx, query, userID, projectID).Scan(&exists)
@@ -38,17 +38,15 @@ func (r *taskRepoImpl) CreateTask(ctx context.Context, currentUserID, projectID 
 
 	query := `
 		INSERT INTO tasks (title, description, priority_id, assignee_id, project_id, status_id)
-		VALUES (?, ?, ?, ?, ?, ?)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
 	`
-	result, err := r.db.ExecContext(ctx, query, title, description, priorityID, assigneeID, projectID, statusID)
+	var id int
+	err = r.db.QueryRowContext(ctx, query, title, description, priorityID, assigneeID, projectID, statusID).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("create task: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("get inserted task id: %w", err)
-	}
-	return int(id), nil
+	return id, nil
 }
 
 // UpdateTaskByID modifies an existing task's fields
@@ -63,8 +61,8 @@ func (r *taskRepoImpl) UpdateTaskByID(ctx context.Context, currentUserID, projec
 
 	query := `
 		UPDATE tasks
-		SET title = ?, description = ?, priority_id = ?, assignee_id = ?, status_id = ?
-		WHERE id = ? AND project_id = ?
+		SET title = $1, description = $2, priority_id = $3, assignee_id = $4, status_id = $5
+		WHERE id = $6 AND project_id = $7
 	`
 	_, err = r.db.ExecContext(ctx, query, title, description, priorityID, assigneeID, statusID, taskID, projectID)
 	if err != nil {
@@ -85,7 +83,7 @@ func (r *taskRepoImpl) DeleteTaskByID(ctx context.Context, currentUserID, projec
 
 	query := `
 		DELETE FROM tasks
-		WHERE id = ? AND project_id = ?
+		WHERE id = $1 AND project_id = $2
 	`
 	_, err = r.db.ExecContext(ctx, query, taskID, projectID)
 	if err != nil {

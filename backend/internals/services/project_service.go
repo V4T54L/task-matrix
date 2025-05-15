@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -36,6 +37,7 @@ func (s *projectServiceImpl) CreateProject(w http.ResponseWriter, r *http.Reques
 
 	id, err := s.repo.CreateProject(r.Context(), currentUser.ID, payload.Name, payload.Description, payload.DueDate)
 	if err != nil {
+		log.Println("Failed to create project:", err)
 		http.Error(w, "Failed to create project", http.StatusInternalServerError)
 		return
 	}
@@ -135,6 +137,7 @@ func (s projectServiceImpl) UpdateProject(w http.ResponseWriter, r *http.Request
 
 	project, err := s.repo.UpdateProjectByID(r.Context(), currentUser.ID, id, payload.Name, payload.Description, payload.DueDate, payload.StatusID)
 	if err != nil {
+		log.Println("Failed to update the project : ", err)
 		http.Error(w, "Failed to update the project", http.StatusInternalServerError)
 		return
 	}

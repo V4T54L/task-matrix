@@ -11,29 +11,30 @@ type userRepoImpl struct {
 	db *sql.DB
 }
 
+// CreateUser inserts a new user and returns the generated ID
 func (r *userRepoImpl) CreateUser(ctx context.Context, name, username, email, avatarUrl, hashedPassword string) (int, error) {
 	query := `
-		INSERT INTO users (name, username, email, avatar_url, password)
-		VALUES (?, ?, ?, ?, ?)
+	INSERT INTO users (name, username, email, avatar_url, password)
+	VALUES ($1, $2, $3, $4, $5)
+	RETURNING id
 	`
-	result, err := r.db.ExecContext(ctx, query, name, username, email, avatarUrl, hashedPassword)
+	var id int
+	err := r.db.QueryRowContext(ctx, query, name, username, email, avatarUrl, hashedPassword).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create user: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("failed to retrieve last insert ID: %w", err)
-	}
-	return int(id), nil
+	return id, nil
 }
 
+// GetUserByCreds fetches a user by username and password
 func (r *userRepoImpl) GetUserByCreds(ctx context.Context, username, hashedPassword string) (*models.User, error) {
 	query := `
-		SELECT id, name, username, email, avatar_url
-		FROM users
-		WHERE username = ? AND password = ?
+	SELECT id, name, username, email, avatar_url
+	FROM users
+	WHERE username = $1 AND password = $2
 	`
 	row := r.db.QueryRowContext(ctx, query, username, hashedPassword)
+
 	var user models.User
 	if err := row.Scan(&user.ID, &user.Name, &user.Username, &user.Email, &user.AvatarUrl); err != nil {
 		return nil, fmt.Errorf("failed to get user by credentials: %w", err)

@@ -59,6 +59,17 @@ const Projects = () => {
         setError("")
         try {
             if (id > 0) {
+                const prevProject = projects.find(e => e.id === id);
+                if (!prevProject) return;
+
+                if (
+                    project.description === prevProject.description && project.due_date === prevProject.due_date &&
+                    project.name === prevProject.name && project.status_id === prevProject.status.id
+                ) {
+                    // no change
+                    return;
+                }
+
                 const updatedProject = await updateProject(id, project);
                 setProjects(prev =>
                     prev.map(p => (p.id === updatedProject.id ? updatedProject : p))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"task-matrix-be/internals/authmodule"
 	"task-matrix-be/internals/config"
 	"task-matrix-be/internals/dbconnectors"
@@ -14,22 +15,32 @@ import (
 )
 
 func main() {
-	// TODO: Add restrictions on fetching and updating projects & tasks
-	auth := authmodule.NewInMemoryUUIDAuth[models.User]()
-	db, err := dbconnectors.GetSqliteDb(config.GetConfig().DB_PATH)
+	if os.Getenv("ENVIRONMENT") != "PRODUCTION" {
+		err := config.LoadConfigurationFile(".env")
+		if err != nil {
+			log.Fatal("Error loading .env : ", err)
+		}
+	}
+	cfg, err := config.GetConfig()
 	if err != nil {
-		log.Fatal("Error connecting to sqlite db: ", err)
+		log.Fatal("Error loading config : ", err)
+	}
+
+	auth := authmodule.NewInMemoryUUIDAuth[models.User]()
+	db, err := dbconnectors.GetPostgresDb(cfg.DB_URI)
+	if err != nil {
+		log.Fatal("Error connecting to postgres db: ", err)
 	}
 
 	defer func() {
 		if err = dbconnectors.CloseSqlDBConn(db); err != nil {
-			log.Println("Error closing sqlite db: ", err)
+			log.Println("Error closing postgres db: ", err)
 		}
 	}()
 
-	log.Println("SQLite connected successfully! ")
+	log.Println("Postgres connected successfully! ")
 
-	if err := migrate.MigrateSQLite(context.Background(), db); err != nil {
+	if err := migrate.MigratePostgres(context.Background(), db); err != nil {
 		log.Fatal("Error mograting database : ", err)
 	}
 
@@ -45,7 +56,7 @@ func main() {
 	log.Println("[+] Routes registered")
 
 	s := http.Server{
-		Addr:    config.GetConfig().SERVER_PORT,
+		Addr:    cfg.SERVER_PORT,
 		Handler: r,
 	}
 

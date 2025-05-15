@@ -13,8 +13,8 @@ const Layout = () => {
         <header className="w-full max-w-7xl flex items-center justify-between mx-auto p-4">
           {/* Logo */}
           <h2 className="flex items-center gap-4 text-xl font-semibold w-fit">
-            <Rocket className="text-foreground" size={24} />
-            Task Matrix
+            <img src="/task-matrix-logo.png" className="w-12" />
+            Project Matrix
           </h2>
 
           {/* logout */}
