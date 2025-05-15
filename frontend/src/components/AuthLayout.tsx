@@ -1,4 +1,3 @@
-import { Rocket } from "lucide-react";
 import { Outlet } from "react-router-dom";
 
 export default function AuthLayout() {
@@ -8,7 +7,7 @@ export default function AuthLayout() {
                 <div className="mx-auto w-fit">
                     {/* Heading */}
                     <h1 className="flex items-center gap-4 text-3xl font-semibold m-8">
-                        <img src="/task-matrix-logo.png" className="w-16"/>
+                        <img src="/task-matrix-logo.png" className="w-16" />
                         Task Matrix
                     </h1>
 

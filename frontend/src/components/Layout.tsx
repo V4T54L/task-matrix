@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom"
 import Sidebar from "./Sidebar"
-import { DoorOpen, Rocket } from "lucide-react"
+import { DoorOpen } from "lucide-react"
 import { Button } from "./ui/Button"
 import { useAuth } from "../context/authProvider"
 
