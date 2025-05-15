@@ -8,7 +8,7 @@ export default function AuthLayout() {
                     {/* Heading */}
                     <h1 className="flex items-center gap-4 text-3xl font-semibold m-8">
                         <img src="/task-matrix-logo.png" className="w-16" />
-                        Task Matrix
+                        Project Matrix
                     </h1>
 
                     {/* Form Start */}
