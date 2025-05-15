@@ -15,17 +15,46 @@ type projectRepoImpl struct {
 
 // CreateProject inserts a new project with currentUserID as the owner
 func (r *projectRepoImpl) CreateProject(ctx context.Context, currentUserID int, name, description, dueDate string) (int, error) {
-	query := `
-		INSERT INTO projects (owner_id, title, description, due_date)
-		VALUES (?, ?, ?, ?)
-	`
-	result, err := r.db.ExecContext(ctx, query, currentUserID, name, description, dueDate)
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, fmt.Errorf("create project: %w", err)
+		return 0, fmt.Errorf("begin transaction: %w", err)
 	}
-	id, err := result.LastInsertId()
-	return int(id), err
+
+	// Insert the project with status_id = 1
+	insertProjectQuery := `
+		INSERT INTO projects (owner_id, title, description, due_date, status_id)
+		VALUES (?, ?, ?, ?, 1)
+	`
+	result, err := tx.ExecContext(ctx, insertProjectQuery, currentUserID, name, description, dueDate)
+	if err != nil {
+		tx.Rollback()
+		return 0, fmt.Errorf("insert project: %w", err)
+	}
+
+	projectID, err := result.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return 0, fmt.Errorf("get last insert id: %w", err)
+	}
+
+	// Insert the owner into project_members
+	insertMemberQuery := `
+		INSERT INTO project_members (project_id, user_id)
+		VALUES (?, ?)
+	`
+	_, err = tx.ExecContext(ctx, insertMemberQuery, projectID, currentUserID)
+	if err != nil {
+		tx.Rollback()
+		return 0, fmt.Errorf("insert project member: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return int(projectID), nil
 }
+
 
 // GetProjects returns all projects the user owns or is a member of
 func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([]models.Project, error) {
@@ -232,24 +261,54 @@ func (r *projectRepoImpl) UpdateProjectByID(ctx context.Context, currentUserID, 
 // AddMemberToProject adds a user to the project by username
 func (r *projectRepoImpl) AddMemberToProject(ctx context.Context, currentUserID, projectID int, username string) (models.User, error) {
 	var u models.User
+
+	// Step 1: Check if the current user is the owner
+	var ownerID int
+	err := r.db.QueryRowContext(ctx, `SELECT owner_id FROM projects WHERE id = ?`, projectID).Scan(&ownerID)
+	if err != nil {
+		return u, fmt.Errorf("project not found or fetch failed: %w", err)
+	}
+	if ownerID != currentUserID {
+		return u, fmt.Errorf("permission denied: user is not the owner of the project")
+	}
+
+	// Step 2: Get user by username
 	query := `
 		SELECT id, name, username, email, avatar_url FROM users WHERE username = ?
 	`
-	err := r.db.QueryRowContext(ctx, query, username).Scan(&u.ID, &u.Name, &u.Username, &u.Email, &u.AvatarUrl)
+	err = r.db.QueryRowContext(ctx, query, username).Scan(&u.ID, &u.Name, &u.Username, &u.Email, &u.AvatarUrl)
 	if err != nil {
 		return u, fmt.Errorf("user not found: %w", err)
 	}
 
+	// Step 3: Add user to project
 	_, err = r.db.ExecContext(ctx, `INSERT INTO project_members (project_id, user_id) VALUES (?, ?)`, projectID, u.ID)
 	if err != nil {
 		return u, fmt.Errorf("add member failed: %w", err)
 	}
+
 	return u, nil
 }
 
 // RemoveMemberFromProject removes a user from the project
 func (r *projectRepoImpl) RemoveMemberFromProject(ctx context.Context, currentUserID, projectID, userID int) error {
-	_, err := r.db.ExecContext(ctx,
+	// Step 1: Check if the current user is the owner
+	var ownerID int
+	err := r.db.QueryRowContext(ctx, `SELECT owner_id FROM projects WHERE id = ?`, projectID).Scan(&ownerID)
+	if err != nil {
+		return fmt.Errorf("project not found or fetch failed: %w", err)
+	}
+	if ownerID != currentUserID {
+		return fmt.Errorf("permission denied: user is not the owner of the project")
+	}
+
+	// Step 2: Prevent owner from removing themselves (optional safety check)
+	if userID == currentUserID {
+		return fmt.Errorf("cannot remove project owner from the project")
+	}
+
+	// Step 3: Delete the member
+	_, err = r.db.ExecContext(ctx,
 		`DELETE FROM project_members WHERE project_id = ? AND user_id = ?`,
 		projectID, userID)
 	if err != nil {
