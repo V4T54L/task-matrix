@@ -61,7 +61,7 @@ func (r *projectRepoImpl) GetProjects(ctx context.Context, currentUserID int) ([
 		JOIN statuses s ON s.id = p.status_id
 		JOIN users u ON u.id = p.owner_id
 		LEFT JOIN project_members pm ON pm.project_id = p.id
-		WHERE p.deleted_at IS NULL AND pm.user_id = $1
+		WHERE p.deleted_at IS NULL AND pm.user_id = $1  AND p.deleted_at IS NULL
 		GROUP BY p.id, s.id, u.id
 	`
 

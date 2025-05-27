@@ -89,36 +89,42 @@ const ProjectDetailModal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, pro
 
                             {/* Status Dropdown */}
 
-                            <div>
+                            {
+                                projectToEdit &&
+                                (
 
-                                <label htmlFor="status_id" className="block text-sm font-medium text-gray-700">Status</label>
+                                    <div>
 
-                                <select
+                                        <label htmlFor="status_id" className="block text-sm font-medium text-gray-700">Status</label>
 
-                                    id="status_id"
+                                        <select
 
-                                    {...register("status_id", { valueAsNumber: true })}
+                                            id="status_id"
 
-                                    className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                                            {...register("status_id", { valueAsNumber: true })}
 
-                                >
+                                            className="w-full mt-1 p-2 border border-gray-300 rounded-md"
 
-                                    <option value="">Select a status</option>
+                                        >
 
-                                    {mockProjectStatus.map(status => (
+                                            <option value="">Select a status</option>
 
-                                        <option key={status.id} value={status.id}>
+                                            {mockProjectStatus.map(status => (
 
-                                            {status.name}
+                                                <option key={status.id} value={status.id}>
 
-                                        </option>
+                                                    {status.name}
 
-                                    ))}
+                                                </option>
 
-                                </select>
+                                            ))}
 
-                            </div>
+                                        </select>
 
+                                    </div>
+
+                                )
+                            }
 
 
                             {/* Action Buttons */}
